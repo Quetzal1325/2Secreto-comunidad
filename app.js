@@ -6,6 +6,32 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/fi
 import { auth } from "./firebase.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+    // ==========================================================================
+    // LÓGICA COMPLETA DEL MODO OSCURO (PERSISTENTE)
+    // ==========================================================================
+    const themeToggleBtn = document.getElementById("theme-toggle-btn");
+    
+    // 1. Verificar si el usuario ya tenía una preferencia guardada en su celular/computadora
+    const currentTheme = localStorage.getItem("theme");
+    if (currentTheme === "dark") {
+        document.body.classList.add("dark-mode");
+        themeToggleBtn.innerText = "☀️"; // Si está oscuro, mostramos el sol
+    }
+
+    // 2. Escuchar el evento de clic para alternar las luces
+    themeToggleBtn.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        
+        // Validamos si se quedó activa la clase oscura para guardarla en memoria
+        if (document.body.classList.contains("dark-mode")) {
+            localStorage.setItem("theme", "dark");
+            themeToggleBtn.innerText = "☀️";
+        } else {
+            localStorage.setItem("theme", "light");
+            themeToggleBtn.innerText = "🌙";
+        }
+    });
+    
     let isLoginMode = false; 
     let currentFeedNsfw = false;
 

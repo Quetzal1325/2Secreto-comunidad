@@ -1,15 +1,25 @@
 /* =========================================
-   VARIABLES Y RESETEO GLOBAL
+   VARIABLES Y RESETEO GLOBAL ACTUALIZADO
 ========================================= */
 :root {
-    --bg-color: #f0f4f8; /* Fondo grisáceo/azulado de la segunda referencia */
+    /* MODO CLARO (Por defecto) */
+    --bg-color: #f0f4f8; 
     --card-bg: #ffffff;
     --text-main: #333333;
     --text-muted: #777777;
-    --accent-color: #c471ed; /* Un tono morado/rosado nostálgico */
+    --accent-color: #c471ed; 
     --accent-hover: #a65bcf;
     --border-color: #e1e8ed;
     --radius: 12px;
+}
+
+body.dark-mode {
+    /* MODO OSCURO (Mismos nombres exactos para que se reemplacen en chinga) */
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-main: #f5f6fa;
+    --text-muted: #a4b0be;
+    --border-color: #2f3542;
 }
 
 * {
@@ -19,10 +29,97 @@
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* =========================================
+   APLICACIÓN GLOBAL DE COLORES ACTUALIZADA v3
+========================================= */
 body {
     background-color: var(--bg-color);
     color: var(--text-main);
     line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Forzamos a que el Header se oscurezca */
+header {
+    background-color: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* CORRECCIÓN DE LOS BOTONES Y PESTAÑAS (Reacciones, Filtros y Perfil) */
+.react-btn, .nav-tab-btn, .dropbtn, .dropdown-content {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* 🎯 PARCHE INMORTAL PARA EL CONTENEDOR DE FILTROS (NORMALES / NSFW) */
+.nav-filters, #nav-filters {
+    background-color: var(--bg-color) !important;
+    border: 1px solid var(--border-color) !important;
+    padding: 4px;
+    border-radius: 20px;
+    display: inline-flex;
+    gap: 5px;
+}
+
+/* Controlar cómo se ve la pestaña activa seleccionada en la noche */
+body.dark-mode .nav-tab-btn.active {
+    background-color: var(--border-color) !important;
+    color: #ffffff !important;
+}
+
+/* Corregir enlaces dentro del menú de usuario */
+.dropdown-content a {
+    color: var(--text-main) !important;
+}
+
+.dropdown-content a:hover {
+    background-color: var(--bg-color) !important;
+}
+
+/* PARCHE PARA LA BURBUJA DE EDAD Y TEXTO DE TIEMPO */
+.user-meta {
+    background-color: var(--bg-color) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.user-meta small {
+    color: var(--text-muted) !important;
+}
+
+/* PARCHE PARA LA CAJA DE COMENTARIOS E INPUTS */
+.comments-section {
+    background-color: var(--bg-color) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.comments-list div, .comments-list span, .comments-list strong {
+    color: var(--text-main) !important;
+}
+
+.comment-form input {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+/* Asegurar tarjetas, publicación y notificaciones */
+.secret-card, .publish-card, #notifications-container {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+.secret-text {
+    color: var(--text-main) !important;
 }
 
 /* =========================================
