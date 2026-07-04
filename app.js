@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
             themeToggleBtn.innerText = "🌙";
         }
     });
-    
+
     let isLoginMode = false; 
     let currentFeedNsfw = false;
 
@@ -149,7 +149,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // ==========================================================================
+    // INTERACCIONES DEL FEED (REACCIONES, COMENTARIOS, DENUNCIAS Y RESPUESTAS)
+    // ==========================================================================
     secretsContainer.addEventListener("click", async (e) => {
+        
         // A) Reacciones
         const botonReaccion = e.target.closest(".react-btn");
         if (botonReaccion) {
@@ -177,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // C) NUEVO: Denunciar Comentarios (Moderación Automática)
+        // C) Denunciar Comentarios (Moderación Automática)
         const btnReportarComentario = e.target.closest(".report-comment-btn");
         if (btnReportarComentario) {
             const comentarioId = btnReportarComentario.getAttribute("data-id");
@@ -194,22 +198,52 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             return;
         }
+
+        // E) Evento para Responder a un comentario existente (Guardando el comentario_id padre)
+        const btnResponderComentario = e.target.closest(".reply-comment-btn");
+        if (btnResponderComentario) {
+            const secretoId = btnResponderComentario.getAttribute("data-id");
+            const comentarioPadreId = btnResponderComentario.getAttribute("data-comentario-id");
+            
+            const contenedorComentarios = btnResponderComentario.closest(".comments-section") || btnResponderComentario.closest("[id^='comments-box-']");
+            
+            if (contenedorComentarios) {
+                const inputComentario = contenedorComentarios.querySelector("input");
+                const formulario = contenedorComentarios.querySelector(".comment-form");
+                
+                if (inputComentario && formulario) {
+                    // Guardamos temporalmente el ID del padre en el formulario para usarlo en el Submit
+                    formulario.setAttribute("data-padre-id", comentarioPadreId || "");
+                    
+                    const mencion = "↪️ @Anónimo: ";
+                    if (!inputComentario.value.includes(mencion)) {
+                        inputComentario.value = mencion;
+                    }
+                    inputComentario.focus();
+                }
+            }
+            return;
+        }
     });
 
-    // D) Enviar un nuevo comentario (Inyectando dueño del secreto para la alerta)
+    // D) Enviar un nuevo comentario (Guardando en la estructura anidada o de primer nivel)
     secretsContainer.addEventListener("submit", async (e) => {
         if (e.target.classList.contains("comment-form")) {
             e.preventDefault();
             
             const secretoId = e.target.getAttribute("data-id");
             const dueñoSecretoId = e.target.getAttribute("data-author"); 
+            const padreId = e.target.getAttribute("data-padre-id") || null; // <-- Obtenemos el ID del padre si existe
             const input = e.target.querySelector("input");
             const texto = input.value;
 
             const { guardarComentario } = await import("./comments.js");
-            await guardarComentario(secretoId, texto, dueñoSecretoId);
+            // Pasamos el padreId como cuarto argumento
+            await guardarComentario(secretoId, texto, dueñoSecretoId, padreId);
             
+            // Limpiamos los inputs y el atributo temporal
             input.value = "";
+            e.target.removeAttribute("data-padre-id");
         }
     });
 

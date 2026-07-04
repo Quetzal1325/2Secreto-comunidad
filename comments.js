@@ -1,4 +1,4 @@
-// comments.js - Gestión de comentarios y moderación automática en tiempo real
+// comments.js - Gestión de comentarios con hilos agrupados debajo de su padre
 import { 
     collection, 
     addDoc, 
@@ -7,22 +7,22 @@ import {
     orderBy, 
     onSnapshot,
     getDocs,
-    doc,         // Para apuntar al comentario específico
-    updateDoc,   // Para actualizar los campos del comentario
-    increment    // Para subir el contador de reportes de 1 en 1 de forma segura
+    doc,         
+    updateDoc,   
+    increment    
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db, auth } from "./firebase.js";
 
-let unsubscribeComments = null; // Almacena el desuscribidor activo
+let unsubscribeComments = null;
 
-// 1. ESCUCHAR COMENTARIOS EN TIEMPO REAL (CON FILTRO DE MODERACIÓN)
+// 1. ESCUCHAR COMENTARIOS EN TIEMPE REAL Y AGRUPARLOS POR HILOS
 export function escucharComentarios(secretoId) {
     const listContainer = document.getElementById(`comments-list-${secretoId}`);
     if (!listContainer) return;
 
-    // Matamos cualquier escucha activa previa para no duplicar sockets
     matarEscuchasComentarios();
 
+    // Los traemos ordenados por fecha para que los hilos también respeten el tiempo
     const q = query(
         collection(db, "comments"),
         where("secreto_id", "==", secretoId),
@@ -37,51 +37,86 @@ export function escucharComentarios(secretoId) {
             return;
         }
 
-        snapshot.forEach((docSnap) => {
-            const comentario = docSnap.data();
-            
-            // 🛡️ FILTRO DE BANEO SUAVE: Si el comentario ya juntó 5 o más reportes, se oculta del feed
-            if (comentario.reportes >= 5) return;
+        const principales = [];
+        const respuestas = [];
 
+        // Separamos los comentarios base de las respuestas
+        snapshot.forEach((docSnap) => {
+            const comentario = { id: docSnap.id, ...docSnap.data() };
+            if (comentario.reportes >= 5) return; // Filtro de moderación
+
+            if (comentario.padre_id) {
+                respuestas.push(comentario);
+            } else {
+                principales.push(comentario);
+            }
+        });
+
+        // Función auxiliar para renderizar un comentario en el HTML
+        function crearElementoComentario(comentario, esRespuesta = false) {
             const div = document.createElement("div");
             div.style.padding = "8px 0";
-            div.style.borderBottom = "1px solid #f1f2f6";
+            div.style.borderBottom = "1px solid var(--border-color)";
             div.style.fontSize = "13.5px";
             
-            // Renderizamos el texto del comentario junto con su botón discreto de reporte (banderita 🚩)
+            // Si es una respuesta, le metemos una sangría (indentación) a la izquierda y un fondo sutil
+            if (esRespuesta) {
+                div.style.marginLeft = "25px";
+                div.style.paddingLeft = "10px";
+                div.style.borderLeft = "2px solid var(--accent-color)";
+                div.style.backgroundColor = "rgba(196, 113, 237, 0.03)"; 
+            }
+
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
                     <span style="color: var(--text-main); word-break: break-word;">
-                        <strong style="color: #333;">Anónimo:</strong> ${comentario.texto}
+                        <strong style="color: var(--text-main);">Anónimo:</strong> ${comentario.texto}
                     </span>
-                    <button class="report-comment-btn" data-id="${docSnap.id}" title="Denunciar comentario inapropiado" style="background: none; border: none; cursor: pointer; font-size: 11px; color: #ff4757; opacity: 0.6; padding: 2px 5px; white-space: nowrap; transition: opacity 0.2s;">
-                        🚩 Reportar
-                    </button>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="reply-comment-btn" data-id="${secretoId}" data-comentario-id="${esRespuesta ? comentario.padre_id : comentario.id}" style="background: none; border: none; cursor: pointer; font-size: 11px; color: var(--accent-color); opacity: 0.8; padding: 2px 5px; white-space: nowrap; font-weight: bold;">
+                            💬 Responder
+                        </button>
+                        <button class="report-comment-btn" data-id="${comentario.id}" title="Denunciar comentario" style="background: none; border: none; cursor: pointer; font-size: 11px; color: #ff4757; opacity: 0.6; padding: 2px 5px; white-space: nowrap;">
+                            🚩 Reportar
+                        </button>
+                    </div>
                 </div>
             `;
-            listContainer.appendChild(div);
+            return div;
+        }
+
+        // Pintamos los comentarios en la interfaz acomodando las respuestas justo abajo de su respectivo padre
+        principales.forEach((principal) => {
+            // 1. Añadimos el comentario padre
+            listContainer.appendChild(crearElementoComentario(principal, false));
+
+            // 2. Buscamos si tiene respuestas asignadas a su ID y las metemos inmediatamente abajo
+            const respuestasDelPadre = respuestas.filter(r => r.padre_id === principal.id);
+            respuestasDelPadre.forEach((respuesta) => {
+                listContainer.appendChild(crearElementoComentario(respuesta, true));
+            });
         });
+
     }, (error) => {
-        console.error("Error al escuchar comentarios en tiempo real:", error);
+        console.error("Error al escuchar comentarios agrupados:", error);
     });
 }
 
-// 2. GUARDAR UN NUEVO COMENTARIO (CON ALERTA AL DUEÑO)
-export async function guardarComentario(secretoId, texto, dueñoSecretoId) {
+// 2. GUARDAR UN NUEVO COMENTARIO (SOPORTA PADRE_ID)
+export async function guardarComentario(secretoId, texto, dueñoSecretoId, padreId = null) {
     try {
         const user = auth.currentUser;
         if (!user) return alert("Inicia sesión para comentar.");
 
-        // Guardamos el comentario con el campo de reportes inicializado en 0
         await addDoc(collection(db, "comments"), {
             secreto_id: secretoId,
             texto: texto,
             autor_id: user.uid,
             fecha: new Date(),
-            reportes: 0 // Todos los comentarios nacen limpios
+            reportes: 0,
+            padre_id: padreId // Si viene null, es un comentario normal de nivel superior
         });
 
-        // Si el que comenta NO es el dueño del secreto, le disparamos una notificación flotante
         if (dueñoSecretoId && dueñoSecretoId !== user.uid) {
             await addDoc(collection(db, "notifications"), {
                 para_usuario_id: dueñoSecretoId,
@@ -91,27 +126,19 @@ export async function guardarComentario(secretoId, texto, dueñoSecretoId) {
                 fecha: new Date()
             });
         }
-
-        console.log("Comentario y validación de alerta procesados!");
     } catch (error) {
         console.error("Error al procesar el comentario:", error);
     }
 }
 
-// 3. EJECUTAR DENUNCIA DE UN COMENTARIO (INCREMENTAR REPORTES)
+// 3. EJECUTAR DENUNCIA DE UN COMENTARIO
 export async function denunciarComentario(comentarioId) {
     try {
         const comentarioRef = doc(db, "comments", comentarioId);
-        
-        // increment(1) actualiza el valor atómicamente directo en los servidores de Firebase
-        await updateDoc(comentarioRef, {
-            reportes: increment(1)
-        });
-        
-        console.log(`Comentario ${comentarioId} reportado exitosamente.`);
+        await updateDoc(comentarioRef, { reportes: increment(1) });
         return true;
     } catch (error) {
-        console.error("Error al registrar denuncia del comentario:", error);
+        console.error("Error al registrar denuncia:", error);
         return false;
     }
 }
@@ -141,8 +168,6 @@ export async function cargarMisComentarios() {
 
         snapshot.forEach((docSnap) => {
             const comentario = docSnap.data();
-            
-            // Ignoramos también en tu historial si por alguna razón fue baneado masivamente
             if (comentario.reportes >= 5) return;
 
             const card = document.createElement("div");
@@ -159,12 +184,10 @@ export async function cargarMisComentarios() {
             container.appendChild(card);
         });
     } catch (error) {
-        console.error("Error al cargar el historial de comentarios:", error);
-        container.innerHTML = "<p class='no-secrets'>Error al mapear tu historial de comentarios.</p>";
+        container.innerHTML = "<p class='no-secrets'>Error al mapear tu historial.</p>";
     }
 }
 
-// 5. APAGAR LOS SOCKETS ACTIVOS DE COMENTARIOS
 export function matarEscuchasComentarios() {
     if (unsubscribeComments) {
         unsubscribeComments();
