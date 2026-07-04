@@ -57,7 +57,8 @@ export function toggleAuthMode(isLogin) {
     }
 }
 
-// 3. MOSTRAR APP SI ESTÁ LOGUEADO, O LOGIN SI NO LO ESTÁ
+// ui.js - SECCIÓN 3 CORREGIDA: Deja la navbar visible para que los invitados tengan menú dinámico
+
 export function showAppView(user) {
     const authSection = document.getElementById('auth-section');
     const appSection = document.getElementById('app-section');
@@ -66,25 +67,24 @@ export function showAppView(user) {
     const navFilters = document.getElementById('nav-filters');
     const navUserMenu = document.getElementById('nav-user-menu');
 
+    // 🌟 Aseguramos que la navbar SIEMPRE se muestre (Invitados y Logueados la usan)
+    if (navFilters) navFilters.style.display = "flex";
+    if (navUserMenu) navUserMenu.style.display = "flex";
+
     if (user) {
-        authSection.style.display = "none";
-        appSection.style.display = "block";
-        
-        // Mostramos las opciones de la navbar
-        navFilters.style.display = "flex";
-        navUserMenu.style.display = "flex";
+        if (authSection) authSection.style.display = "none";
+        if (appSection) appSection.style.display = "block";
     } else {
-        authSection.style.display = "block";
-        appSection.style.display = "none";
-        
-        // Ocultamos las opciones de la navbar si no hay sesión activa
-        navFilters.style.display = "none";
-        navUserMenu.style.display = "none";
+        // En modo invitado mandamos a la app principal, no bloqueamos con el login
+        if (authSection) authSection.style.display = "none";
+        if (appSection) appSection.style.display = "block";
     }
 }
 
+// 4. RENDERIZAR LAS TARJETAS DE SECRETOS EN EL FEED
 export function pintarSecretos(secretos) {
     const container = document.getElementById("secrets-container");
+    if (!container) return;
     container.innerHTML = ""; 
 
     if (secretos.length === 0) {
@@ -95,6 +95,8 @@ export function pintarSecretos(secretos) {
     secretos.forEach((secreto) => {
         const secretoCard = document.createElement("div");
         secretoCard.className = "secret-card";
+        // Añadimos el atributo de autor para que comments.js lo capture de forma nativa
+        secretoCard.setAttribute("data-author", secreto.autor_id || "");
         
         // Determinamos el emoji del género y la clase CSS para el color
         let emojiGenero = "👤";
@@ -112,7 +114,7 @@ export function pintarSecretos(secretos) {
         // Verificamos si lleva la etiqueta de alerta morbosa (NSFW)
         const etiquetaNsfw = secreto.es_nsfw ? `<span class="badge-nsfw">🌶️ NSFW</span>` : "";
 
-        // NUEVO: Verificamos si tiene un código de Tmpy adjunto para renderizar el hipervínculo
+        // Verificamos si tiene un código de Tmpy adjunto para renderizar el hipervínculo multimedia
         let enlaceTmpyHtml = "";
         if (secreto.tmpy_code && secreto.tmpy_code.trim() !== "") {
             const urlCompleta = `https://www.tmpy.net/view/${secreto.tmpy_code.trim()}`;
@@ -129,53 +131,48 @@ export function pintarSecretos(secretos) {
         // Calculamos dinámicamente el tiempo transcurrido
         const tiempoHace = calcularTiempoHace(secreto.fecha);
 
-        // ui.js - Fragmento actualizado dentro de pintarSecretos
+        // Armamos la maquetación de la tarjeta con el bloque de comentarios vacío por defecto
+        secretoCard.innerHTML = `
+            <div class="secret-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span class="user-meta ${claseGenero}">
+                        ${emojiGenero} ${secreto.autor_edad || '??'} años • <small style="color: var(--text-muted); font-weight: normal;">${tiempoHace}</small>
+                    </span>
+                    ${etiquetaNsfw}
+                </div>
+                
+                <button class="report-secret-btn" data-id="${secreto.id}" title="Denunciar este secreto" style="background: none; border: none; cursor: pointer; font-size: 12px; color: #ff4757; opacity: 0.6; padding: 4px 8px; font-weight: bold;">
+                    🚩 Reportar
+                </button>
+            </div>
 
-secretoCard.innerHTML = `
-    <div class="secret-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <span class="user-meta ${claseGenero}">
-                ${emojiGenero} ${secreto.autor_edad || '??'} años • <small style="color: var(--text-muted); font-weight: normal;">${tiempoHace}</small>
-            </span>
-            ${etiquetaNsfw}
-        </div>
-        
-        <button class="report-secret-btn" data-id="${secreto.id}" title="Denunciar este secreto" style="background: none; border: none; cursor: pointer; font-size: 12px; color: #ff4757; opacity: 0.6; padding: 4px 8px; font-weight: bold;">
-            🚩 Reportar
-        </button>
-    </div>
+            <p class="secret-text">${secreto.texto}</p>
+            
+            ${enlaceTmpyHtml}
+            
+            <div class="interactions-bar" style="margin-top: 15px;">
+                <button class="react-btn" data-id="${secreto.id}" data-type="feliz">
+                    😊 <span class="count">${secreto.reacciones?.feliz || 0}</span>
+                </button>
+                <button class="react-btn" data-id="${secreto.id}" data-type="enojado">
+                    😡 <span class="count">${secreto.reacciones?.enojado || 0}</span>
+                </button>
+                <button class="react-btn" data-id="${secreto.id}" data-type="triste">
+                    😢 <span class="count">${secreto.reacciones?.triste || 0}</span>
+                </button>
+                <button class="react-btn" data-id="${secreto.id}" data-type="asco">
+                    🤢 <span class="count">${secreto.reacciones?.asco || 0}</span>
+                </button>
 
-    <p class="secret-text">${secreto.texto}</p>
-    
-    ${enlaceTmpyHtml}
-    
-    <div class="interactions-bar" style="margin-top: 15px;">
-        <button class="react-btn" data-id="${secreto.id}" data-type="feliz">
-            😊 <span class="count">${secreto.reacciones?.feliz || 0}</span>
-        </button>
-        <button class="react-btn" data-id="${secreto.id}" data-type="enojado">
-            😡 <span class="count">${secreto.reacciones?.enojado || 0}</span>
-        </button>
-        <button class="react-btn" data-id="${secreto.id}" data-type="triste">
-            😢 <span class="count">${secreto.reacciones?.triste || 0}</span>
-        </button>
-        <button class="react-btn" data-id="${secreto.id}" data-type="asco">
-            🤢 <span class="count">${secreto.reacciones?.asco || 0}</span>
-        </button>
+                <button class="comment-toggle-btn" data-id="${secreto.id}">
+                    💬 Ver Comentarios
+                </button>
+            </div>
 
-        <button class="comment-toggle-btn" data-id="${secreto.id}">
-            💬 Ver Comentarios
-        </button>
-    </div>
-
-    <div class="comments-section" id="comments-box-${secreto.id}" style="display: none; margin-top: 15px;">
-        <div class="comments-list" id="comments-list-${secreto.id}"></div>
-        <form class="comment-form" data-id="${secreto.id}" data-author="${secreto.autor_id || ''}" style="display: flex; margin-top: 10px;">
-            <input type="text" placeholder="Escribe un comentario anónimo..." required style="flex: 1;">
-            <button type="submit">Enviar</button>
-        </form>
-    </div>
-`;
+            <div class="comments-section" id="comments-box-${secreto.id}" style="display: none; margin-top: 15px;">
+                <div class="comments-list" id="comments-list-${secreto.id}"></div>
+                </div>
+        `;
         container.appendChild(secretoCard);
     });
 }

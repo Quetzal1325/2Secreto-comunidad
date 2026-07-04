@@ -79,6 +79,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // --- EFECTO AUTO-GROW Y CONTADOR PARA LOS TEXTAREAS DE COMENTARIOS ---
+    secretsContainer.addEventListener("input", (e) => {
+        if (e.target.classList.contains("comment-textarea")) {
+            const textarea = e.target;
+            
+            // 1. Auto-ajustar la altura dinámicamente
+            textarea.style.height = "auto"; // Reseteamos
+            textarea.style.height = textarea.scrollHeight + "px"; // Le damos la altura del contenido real
+
+            // 2. Actualizar el contador de caracteres del formulario correspondiente
+            const formulario = textarea.closest(".comment-form");
+            if (formulario) {
+                const contador = formulario.querySelector(".char-counter");
+                if (contador) {
+                    const caracteresActuales = textarea.value.length;
+                    contador.innerText = `${caracteresActuales} / 500`;
+                    
+                    // Si se acerca al límite, lo pintamos de rojo de advertencia
+                    if (caracteresActuales >= 450) {
+                        contador.style.color = "#ff4757";
+                    } else {
+                        contador.style.color = "gray";
+                    }
+                }
+            }
+        }
+    });
+
     // --- CONTROL DE PUBLICACIÓN (MODAL/TOGGLE CON CANDADO) ---
     if (navPublishTrigger) {
         navPublishTrigger.addEventListener("click", () => {
@@ -290,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // D) Enviar un nuevo comentario (Con candado de invitado)
+            // D) Enviar un nuevo comentario actualizado para Textarea
         secretsContainer.addEventListener("submit", async (e) => {
             if (e.target.classList.contains("comment-form")) {
                 e.preventDefault();
@@ -303,14 +331,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 const secretoId = e.target.getAttribute("data-id");
                 const dueñoSecretoId = e.target.getAttribute("data-author"); 
                 const padreId = e.target.getAttribute("data-padre-id") || null;
-                const input = e.target.querySelector("input");
-                const texto = input.value;
+                
+                // CORREGIDO: Buscamos la clase del textarea
+                const textarea = e.target.querySelector(".comment-textarea");
+                const texto = textarea.value;
 
                 const { guardarComentario } = await import("./comments.js");
                 await guardarComentario(secretoId, texto, dueñoSecretoId, padreId);
                 
-                input.value = "";
+                // Limpiamos el texto, reseteamos la altura a una sola línea y el contador a 0
+                textarea.value = "";
+                textarea.style.height = "auto"; 
                 e.target.removeAttribute("data-padre-id");
+                
+                const contador = e.target.querySelector(".char-counter");
+                if (contador) contador.innerText = "0 / 500";
             }
         });
     }

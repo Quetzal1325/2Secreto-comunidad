@@ -1,4 +1,4 @@
-// comments.js - Gestión de comentarios con hilos agrupados (Sin sistema de reportes)
+// comments.js - Gestión de comentarios con hilos agrupados, Textarea Auto-Grow y Límite de 500 caracteres
 import { 
     collection, 
     addDoc, 
@@ -6,8 +6,7 @@ import {
     where, 
     orderBy, 
     onSnapshot,
-    getDocs,
-    doc
+    getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db, auth } from "./firebase.js";
 
@@ -16,9 +15,14 @@ let unsubscribeComments = null;
 // 1. ESCUCHAR COMENTARIOS EN TIEMPO REAL Y AGRUPARLOS POR HILOS
 export function escucharComentarios(secretoId) {
     const listContainer = document.getElementById(`comments-list-${secretoId}`);
-    if (!listContainer) return;
+    const boxContainer = document.getElementById(`comments-box-${secretoId}`);
+    if (!listContainer || !boxContainer) return;
 
     matarEscuchasComentarios();
+
+    // Intentamos jalar el ID del autor desde el contenedor o la tarjeta padre
+    const tarjetaPadre = boxContainer.closest(".secret-card");
+    const dueñoSecretoId = tarjetaPadre ? tarjetaPadre.getAttribute("data-author") : null;
 
     const q = query(
         collection(db, "comments"),
@@ -31,56 +35,75 @@ export function escucharComentarios(secretoId) {
 
         if (snapshot.empty) {
             listContainer.innerHTML = "<p style='font-size: 13px; color: gray; font-style: italic; margin: 5px 0;'>Nadie ha comentado aún... Sé el primero.</p>";
-            return;
-        }
+        } else {
+            const principales = [];
+            const respuestas = [];
 
-        const principales = [];
-        const respuestas = [];
-
-        snapshot.forEach((docSnap) => {
-            const comentario = { id: docSnap.id, ...docSnap.data() };
-            if (comentario.padre_id) {
-                respuestas.push(comentario);
-            } else {
-                principales.push(comentario);
-            }
-        });
-
-        // Función auxiliar para renderizar un comentario en el HTML (Sin botón de reportar)
-        function crearElementoComentario(comentario, esRespuesta = false) {
-            const div = document.createElement("div");
-            div.style.padding = "8px 0";
-            div.style.borderBottom = "1px solid var(--border-color)";
-            div.style.fontSize = "13.5px";
-            
-            if (esRespuesta) {
-                div.style.marginLeft = "25px";
-                div.style.paddingLeft = "10px";
-                div.style.borderLeft = "2px solid var(--accent-color)";
-                div.style.backgroundColor = "rgba(196, 113, 237, 0.03)"; 
-            }
-
-            div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
-                    <span style="color: var(--text-main); word-break: break-word;">
-                        <strong style="color: var(--text-main);">Anónimo:</strong> ${comentario.texto}
-                    </span>
-                    <button class="reply-comment-btn" data-id="${secretoId}" data-comentario-id="${esRespuesta ? comentario.padre_id : comentario.id}" style="background: none; border: none; cursor: pointer; font-size: 11px; color: var(--accent-color); opacity: 0.8; padding: 2px 5px; white-space: nowrap; font-weight: bold;">
-                        💬 Responder
-                    </button>
-                </div>
-            `;
-            return div;
-        }
-
-        principales.forEach((principal) => {
-            listContainer.appendChild(crearElementoComentario(principal, false));
-
-            const respuestasDelPadre = respuestas.filter(r => r.padre_id === principal.id);
-            respuestasDelPadre.forEach((respuesta) => {
-                listContainer.appendChild(crearElementoComentario(respuesta, true));
+            snapshot.forEach((docSnap) => {
+                const comentario = { id: docSnap.id, ...docSnap.data() };
+                if (comentario.padre_id) {
+                    respuestas.push(comentario);
+                } else {
+                    principales.push(comentario);
+                }
             });
-        });
+
+            // Función auxiliar para renderizar un comentario en el HTML
+            function crearElementoComentario(comentario, esRespuesta = false) {
+                const div = document.createElement("div");
+                div.style.padding = "8px 0";
+                div.style.borderBottom = "1px solid var(--border-color)";
+                div.style.fontSize = "13.5px";
+                
+                if (esRespuesta) {
+                    div.style.marginLeft = "25px";
+                    div.style.paddingLeft = "10px";
+                    div.style.borderLeft = "2px solid var(--accent-color)";
+                    div.style.backgroundColor = "rgba(196, 113, 237, 0.03)"; 
+                }
+
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
+                        <span style="color: var(--text-main); word-break: break-word;">
+                            <strong style="color: var(--text-main);">Anónimo:</strong> ${comentario.texto}
+                        </span>
+                        <button class="reply-comment-btn" data-id="${secretoId}" data-comentario-id="${esRespuesta ? comentario.padre_id : comentario.id}" style="background: none; border: none; cursor: pointer; font-size: 11px; color: var(--accent-color); opacity: 0.8; padding: 2px 5px; white-space: nowrap; font-weight: bold;">
+                            💬 Responder
+                        </button>
+                    </div>
+                `;
+                return div;
+            }
+
+            principales.forEach((principal) => {
+                listContainer.appendChild(crearElementoComentario(principal, false));
+
+                const respuestasDelPadre = respuestas.filter(r => r.padre_id === principal.id);
+                respuestasDelPadre.forEach((respuesta) => {
+                    listContainer.appendChild(crearElementoComentario(respuesta, true));
+                });
+            });
+        }
+
+        // 🌟 INYECCIÓN DEL FORMULARIO ACTUALIZADO CON TEXTAREA INTELIGENTE Y CONTADOR ANTISPAM
+        // Revisamos si ya existe el formulario para no duplicarlo en cada snapshot
+        let formularioExistente = boxContainer.querySelector(".comment-form-container");
+        if (!formularioExistente) {
+            const formDiv = document.createElement("div");
+            formDiv.className = "comment-form-container";
+            formDiv.innerHTML = `
+                <form class="comment-form" data-id="${secretoId}" data-author="${dueñoSecretoId || ''}" style="display: flex; flex-direction: column; gap: 5px; width: 100%; margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                    <div style="display: flex; gap: 8px; align-items: flex-end; width: 100%;">
+                        <!-- Textarea auto-ajustable con límite físico de 500 caracteres -->
+                        <textarea class="comment-textarea" rows="1" maxlength="500" placeholder="Escribe un comentario..." required style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 13.5px; resize: none; overflow-y: hidden; box-sizing: border-box; background: var(--bg-card); color: var(--text-main); font-family: inherit; line-height: 1.4; max-height: 120px;"></textarea>
+                        <button type="submit" class="submit-comment-btn" style="background-color: var(--accent-color); color: white; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; font-size: 13.5px; cursor: pointer; height: 38px; white-space: nowrap;">Enviar</button>
+                    </div>
+                    <!-- Contador de caracteres dinámico discreto -->
+                    <span class="char-counter" style="font-size: 11px; color: gray; text-align: right; margin-right: 5px; margin-top: 2px;">0 / 500</span>
+                </form>
+            `;
+            boxContainer.appendChild(formDiv);
+        }
 
     }, (error) => {
         console.error("Error al escuchar comentarios:", error);
@@ -91,7 +114,7 @@ export function escucharComentarios(secretoId) {
 export async function guardarComentario(secretoId, texto, dueñoSecretoId, padreId = null) {
     try {
         const user = auth.currentUser;
-        if (!user) return alert("Inicia sesión para comentar.");
+        if (!user) return;
 
         await addDoc(collection(db, "comments"), {
             secreto_id: secretoId,
@@ -118,6 +141,7 @@ export async function guardarComentario(secretoId, texto, dueñoSecretoId, padre
 // 3. CARGAR HISTORIAL ESTÁTICO DE MIS COMENTARIOS
 export async function cargarMisComentarios() {
     const container = document.getElementById("secrets-container");
+    if (!container) return;
     container.innerHTML = "<p class='loading'>Cargando tus comentarios realizados...</p>";
 
     try {
@@ -146,7 +170,7 @@ export async function cargarMisComentarios() {
 
             card.innerHTML = `
                 <p style="font-size: 12px; color: gray; margin: 0 0 5px 0;">Comentaste en un secreto:</p>
-                <p class="secret-text" style="font-style: italic; color: #444;">"${comentario.texto}"</p>
+                <p class="secret-text" style="font-style: italic; color: var(--text-main);">"${comentario.texto}"</p>
                 <div style="margin-top: 10px; text-align: right;">
                     <a href="#" class="view-linked-secret" data-id="${comentario.secreto_id}" style="font-size: 12px; color: var(--accent-color); text-decoration: none; font-weight: bold;">🔍 Ver Secreto Completo</a>
                 </div>
