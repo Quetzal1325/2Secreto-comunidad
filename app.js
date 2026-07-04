@@ -1,4 +1,4 @@
-// app.js - Punto de entrada de la aplicación totalmente actualizado
+// app.js - Versión unificada con Notificaciones y Tiempo Real
 import { toggleAuthMode } from "./ui.js";
 import { registrarUsuario, iniciarSesion, cerrarSesion } from "./auth.js";
 import { guardarSecreto, cargarFeed } from "./secrets.js"; 
@@ -24,6 +24,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const mySecretsBtn = document.getElementById("my-secrets-btn");
     const myCommentsBtn = document.getElementById("my-comments-btn");
+
+    // Elementos de la Campana de Alertas
+    const navNotifTrigger = document.getElementById("nav-notifications-trigger");
+    const notifContainer = document.getElementById("notifications-container");
+    const clearNotifBtn = document.getElementById("clear-notif-btn");
+
+    // --- MANEJO DEL PANEL DE NOTIFICACIONES ---
+    navNotifTrigger.addEventListener("click", () => {
+        notifContainer.style.display = notifContainer.style.display === "none" ? "block" : "none";
+    });
+
+    clearNotifBtn.addEventListener("click", async () => {
+        const { marcarNotificacionesComoLeidas } = await import("./notifications.js");
+        await marcarNotificacionesComoLeidas();
+    });
+
+    // Cerrar el panel de notificaciones si hacen clic afuera
+    document.addEventListener("click", (e) => {
+        if (!navNotifTrigger.contains(e.target) && !notifContainer.contains(e.target)) {
+            notifContainer.style.display = "none";
+        }
+    });
 
     // --- CONTROL DE PUBLICACIÓN (MODAL/TOGGLE) ---
     navPublishTrigger.addEventListener("click", () => {
@@ -129,17 +151,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // C) Enviar un nuevo comentario
+    // C) Enviar un nuevo comentario (Inyectando dueño del secreto para la alerta)
     secretsContainer.addEventListener("submit", async (e) => {
         if (e.target.classList.contains("comment-form")) {
             e.preventDefault();
             
             const secretoId = e.target.getAttribute("data-id");
+            const dueñoSecretoId = e.target.getAttribute("data-author"); // <-- Jalamos el autor
             const input = e.target.querySelector("input");
             const texto = input.value;
 
             const { guardarComentario } = await import("./comments.js");
-            await guardarComentario(secretoId, texto);
+            await guardarComentario(secretoId, texto, dueñoSecretoId);
             
             input.value = "";
         }
@@ -176,6 +199,10 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         const { matarEscuchasComentarios } = await import("./comments.js");
         matarEscuchasComentarios();
+        
+        const { apagarNotificaciones } = await import("./notifications.js");
+        apagarNotificaciones();
+        
         cerrarSesion();
     });
 
@@ -183,6 +210,11 @@ document.addEventListener("DOMContentLoaded", () => {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             cargarFeed(currentFeedNsfw);
+            
+            // En cuanto inicie sesión, encendemos el radar de notificaciones en tiempo real
+            import("./notifications.js").then(({ escucharNotificaciones }) => {
+                escucharNotificaciones();
+            });
         }
     });
 });
