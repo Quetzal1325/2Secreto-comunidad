@@ -12,7 +12,7 @@
 
     <!-- ==========================================================================
          HEADER COMPLETO CON SISTEMA DE NOTIFICACIONES Y BOTÓN MODO OSCURO
-         ========================================================================== */ -->
+         ========================================================================== -->
     <header>
         <div class="navbar-container">
             <!-- Izquierda: Logo y Slogan -->
@@ -21,17 +21,17 @@
                 <p>Comunidad Anónima</p>
             </div>
 
-            <!-- Centro: Filtros de Contenido (Solo visibles si está logueado) -->
-            <div id="nav-filters" class="nav-filters" style="display: none;">
+            <!-- Centro: Filtros de Contenido (Disponibles para Invitados y Logueados) -->
+            <div id="nav-filters" class="nav-filters">
                 <button id="tab-normal" class="nav-tab-btn active">😇 Normales</button>
                 <button id="tab-nsfw" class="nav-tab-btn">🌶️ NSFW</button>
             </div>
 
-            <!-- Derecha: Perfil, Notificaciones y Menú de Usuario (Solo visible si está logueado) -->
-            <div id="nav-user-menu" class="nav-user-menu" style="display: none;">
+            <!-- Derecha: Perfil, Notificaciones y Menú de Usuario -->
+            <div id="nav-user-menu" class="nav-user-menu">
                 <button id="nav-publish-trigger" class="nav-action-btn">➕ Publicar</button>
                 
-                <!-- NUEVO: Botón de Alternancia de Modo Oscuro -->
+                <!-- Botón de Alternancia de Modo Oscuro -->
                 <button id="theme-toggle-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; margin: 0 8px; display: flex; align-items: center;" title="Cambiar tema">
                     🌙
                 </button>
@@ -41,12 +41,14 @@
                     🔔 <span id="notif-badge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ff4757; color: white; font-size: 10px; border-radius: 50%; padding: 2px 6px; font-weight: bold; line-height: 1;">0</span>
                 </button>
 
+                                <!-- Busca la sección del dropdown en tu index.html y déjala así: -->
                 <div class="dropdown">
                     <button class="dropbtn">👤 Mi Perfil ▼</button>
-                    <div class="dropdown-content">
+                    <div id="dropdown-menu-content" class="dropdown-content">
+                        <!-- Esto se va a sobreescribir dinámicamente desde app.js, no te preocupes por lo que dejes aquí por defecto -->
                         <a href="#" id="my-secrets-btn">📝 Mis Secretos</a>
                         <a href="#" id="my-comments-btn">💬 Mis Comentarios</a>
-                        <hr>
+                        <hr id="dropdown-divider">
                         <a href="#" id="logout-btn-nav" class="logout-link">🚪 Cerrar Sesión</a>
                     </div>
                 </div>
@@ -66,60 +68,55 @@
     </div>
 
     <main>
-        <!-- SECCIÓN DE AUTENTICACIÓN REFACTORIZADA -->
-    <section id="auth-section">
-        <div class="auth-card">
-            <h2 id="auth-title">Crear Cuenta Anónima</h2>
-            <form id="auth-form">
-                <!-- Inputs obligatorios siempre visibles -->
-                <div class="form-group">
-                    <label for="email">Correo electrónico (permanecerá oculto):</label>
-                    <input type="email" id="email" placeholder="ejemplo@anonimo.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Contraseña:</label>
-                    <input type="password" id="password" placeholder="Mínimo 6 caracteres" required>
-                </div>
-
-                <!-- Inputs extra que ocultaremos dinámicamente -->
-                <div id="extra-fields">
+        <!-- SECCIÓN DE AUTENTICACIÓN (Nace oculta para priorizar Modo Invitado) -->
+        <section id="auth-container" style="display: none;">
+            <div class="auth-card">
+                <h2 id="auth-title">Crear Cuenta Anónima</h2>
+                <form id="auth-form">
                     <div class="form-group">
-                        <label for="age">Edad:</label>
-                        <input type="number" id="age" min="13" max="99" placeholder="18" required>
+                        <label for="email">Correo electrónico (permanecerá oculto):</label>
+                        <input type="email" id="email" placeholder="ejemplo@anonimo.com" required>
                     </div>
                     <div class="form-group">
-                        <label for="gender">Género:</label>
-                        <select id="gender" required>
-                            <option value="" disabled selected>Selecciona tu género</option>
-                            <option value="Hombre">Hombre</option>
-                            <option value="Mujer">Mujer</option>
-                            <option value="Otro">Otro</option>
-                        </select>
+                        <label for="password">Contraseña:</label>
+                        <input type="password" id="password" placeholder="Mínimo 6 caracteres" required>
                     </div>
-                </div>
 
-                <!-- LOS DOS BOTONES ACCIÓN (Fijos) -->
-                <button type="submit" id="auth-btn-register" style="margin-bottom: 10px;">Registrarse</button>
-                <button type="submit" id="auth-btn-login" style="display: none; background-color: #4cd137;">Entrar</button>
-            </form>
-            
-            <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border-color);">
-            
-            <!-- Links sencillos fijos -->
-            <p id="toggle-to-login" style="text-align: center; font-size: 14px; color: var(--text-muted);">
-                ¿Ya tienes cuenta? <span id="go-to-login" style="color: var(--accent-color); cursor: pointer; font-weight: bold;">Inicia sesión aquí</span>
-            </p>
-            <p id="toggle-to-register" style="text-align: center; font-size: 14px; color: var(--text-muted); display: none;">
-                ¿No tienes cuenta? <span id="go-to-register" style="color: var(--accent-color); cursor: pointer; font-weight: bold;">Regístrate aquí</span>
-            </p>
-        </div>
-    </section>
+                    <div id="extra-fields">
+                        <div class="form-group">
+                            <label for="age">Edad:</label>
+                            <input type="number" id="age" min="13" max="99" placeholder="18" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Género:</label>
+                            <select id="gender" required>
+                                <option value="" disabled selected>Selecciona tu género</option>
+                                <option value="Hombre">Hombre</option>
+                                <option value="Mujer">Mujer</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
 
-        <!-- SECCIÓN DEL FEED PRINCIPAL -->
-        <section id="app-section" style="display: none;">
+                    <button type="submit" id="auth-btn-register" style="margin-bottom: 10px;">Registrarse</button>
+                    <button type="submit" id="auth-btn-login" style="display: none; background-color: #4cd137;">Entrar</button>
+                </form>
+                
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border-color);">
+                
+                <p id="toggle-to-login" style="text-align: center; font-size: 14px; color: var(--text-muted);">
+                    ¿Ya tienes cuenta? <span id="go-to-login" style="color: var(--accent-color); cursor: pointer; font-weight: bold;">Inicia sesión aquí</span>
+                </p>
+                <p id="toggle-to-register" style="text-align: center; font-size: 14px; color: var(--text-muted); display: none;">
+                    ¿No tienes cuenta? <span id="go-to-register" style="color: var(--accent-color); cursor: pointer; font-weight: bold;">Regístrate aquí</span>
+                </p>
+            </div>
+        </section>
+
+        <!-- SECCIÓN DEL FEED PRINCIPAL (Nace visible para que entren directo a leer) -->
+        <section id="app-container" style="display: block;">
             
             <!-- CONTENEDOR FLOTANTE / OCULTO PARA PUBLICAR -->
-            <!-- CONTENEDOR FLOTANTE / OCULTO PARA PUBLICAR ACTUALIZADO -->
             <div id="publish-container" class="publish-card" style="display: none; margin-bottom: 25px;">
                 <h3>Cuéntanos tu secreto...</h3>
                 <form id="secret-form">
@@ -131,7 +128,6 @@
                         </label>
                     </div>
 
-                    <!-- NUEVO: Input opcional para el código Tmpy -->
                     <div class="form-row" style="margin-bottom: 15px;">
                         <input type="text" id="secret-tmpy" placeholder="Código Tmpy de 8 dígitos (Opcional, ej: 1378ef05)" maxlength="8" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box;">
                     </div>
