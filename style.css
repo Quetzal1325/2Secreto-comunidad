@@ -494,3 +494,93 @@ button[type="submit"]:hover {
     letter-spacing: 0.5px;
     box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
 }
+
+/* ==========================================================================
+   DISEÑO ADAPTATIVO (MEDIA QUERIES PARA CELULARES)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    /* 1. Ajustes del Header General */
+    header {
+        padding: 10px 5px !important;
+    }
+
+    .navbar-container {
+        flex-direction: column !important; /* Pasamos de fila a columna */
+        gap: 12px !important;
+        align-items: center !important;
+        text-align: center;
+        width: 100% !important;
+    }
+
+    /* 2. Reducir un poco el tamaño del logo para que no sature */
+    .nav-logo-box h1 {
+        font-size: 20px !important;
+    }
+    .nav-logo-box p {
+        font-size: 11px !important;
+    }
+
+    /* 3. Acomodo de los botones a los lados */
+    .nav-user-menu {
+        width: 100% !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important; /* Si no caben, bajan de renglón suavemente */
+        gap: 8px !important;
+    }
+
+    /* Ajustar tamaño de botones para que jueguen bien en pantallas chicas */
+    .nav-action-btn, .dropbtn {
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+    }
+
+    /* Ajustes al contenedor de filtros (Normales / NSFW) */
+    .nav-filters, #nav-filters {
+        width: auto !important;
+        justify-content: center !important;
+    }
+
+    .nav-tab-btn {
+        padding: 6px 14px !important;
+        font-size: 13px !important;
+    }
+
+    /* 4. Ajuste del Contenedor de Secretos (Feed) */
+    #secrets-container, .feed-container {
+        width: 100% !important;
+        padding: 0 10px !important; /* Espaciado a los lados para que no toque el borde del cel */
+    }
+
+    .secret-card, .publish-card {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+    }
+
+    /* 5. Ajustes finos dentro de la tarjeta */
+    .secret-header {
+        flex-wrap: wrap !important;
+        gap: 5px !important;
+    }
+
+    .interactions-bar {
+        flex-wrap: wrap !important; /* Las caritas se adaptan si el cel es muy chico */
+        gap: 8px !important;
+    }
+    
+    .comment-toggle-btn {
+        margin-left: auto !important;
+    }
+    
+    /* Caja flotante de alertas ajustada a la pantalla */
+    #notifications-container {
+        width: 90% !important;
+        right: 5% !important;
+        left: 5% !important;
+        top: auto !important;
+        bottom: 20px !important; /* En móviles es más cómodo que flote abajo */
+    }
+}
