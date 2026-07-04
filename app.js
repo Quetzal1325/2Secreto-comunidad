@@ -540,3 +540,44 @@ function mostrarAlertaInvitado() {
         }
     });
 }
+
+// ==========================================================================
+// 🚀 LÓGICA DE INSTALACIÓN PWA (BOTÓN FLOTANTE)
+// ==========================================================================
+let deferredPrompt;
+const installBtn = document.getElementById('pwa-install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Previene que Chrome muestre el mini-infobar por defecto
+    e.preventDefault();
+    // Guarda el evento para poder dispararlo luego
+    deferredPrompt = e;
+    
+    // Mostramos nuestro botón flotante elegante
+    if (installBtn) {
+        installBtn.style.display = 'flex';
+    }
+});
+
+if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Muestra el prompt nativo de instalación
+            deferredPrompt.prompt();
+            // Espera la respuesta del usuario
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`El usuario decidió: ${outcome}`);
+            
+            // Limpiamos la variable, ya no se puede usar de nuevo
+            deferredPrompt = null;
+            // Ocultamos el botón
+            installBtn.style.display = 'none';
+        }
+    });
+}
+
+// Escuchamos si la app ya fue instalada con éxito
+window.addEventListener('appinstalled', () => {
+    console.log('¡La PWA ha sido instalada con éxito, capitán!');
+    if (installBtn) installBtn.style.display = 'none';
+});

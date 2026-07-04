@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2Secreto - Comunidad Anónima</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
@@ -146,6 +146,18 @@
             <div id="secrets-container"></div>
         </section>
     </main>
+
+
+
+    <button id="pwa-install-btn" class="floating-install-btn" style="display: none;" title="Instalar App">
+        <svg viewBox="0 0 24 24" class="pwa-icon" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <path d="M12 18h.01"></path>
+            <path d="M12 7v6"></path>
+            <path d="M9 10l3 3 3-3"></path>
+        </svg>
+        <span>Instalar App</span>
+    </button>
 
     <script type="module" src="app.js"></script>
     <script>

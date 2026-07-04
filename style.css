@@ -144,12 +144,15 @@ header {
     justify-content: space-between; /* Izquierda, Centro y Derecha alineados */
 }
 
-.nav-logo-box text-align: left; {
+.nav-logo-box {
+    text-align: left; /* Corregido: ahora sí está en su casita */
 }
+
 .nav-logo-box h1 {
     font-size: 20px;
     color: var(--accent-color);
 }
+
 .nav-logo-box p {
     font-size: 11px;
     color: var(--text-muted);
@@ -582,5 +585,60 @@ button[type="submit"]:hover {
         left: 5% !important;
         top: auto !important;
         bottom: 20px !important; /* En móviles es más cómodo que flote abajo */
+    }
+}
+
+/* ==========================================================================
+   🚀 ESTILOS DEL BOTÓN FLOTANTE PWA
+   ========================================================================== */
+.floating-install-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: linear-gradient(135deg, #c471ed, #9b59b6);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(196, 113, 237, 0.4);
+    z-index: 9999;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: sutilPulse 2.5s infinite;
+}
+
+/* El icono SVG se escala perfecto */
+.pwa-icon {
+    width: 22px;
+    height: 22px;
+}
+
+/* Efecto al pasar el mouse o tocar */
+.floating-install-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(196, 113, 237, 0.6);
+    animation: none; /* Detiene la respiración al interactuar */
+}
+
+/* Animación de "Respiración" para llamar la atención amigablemente */
+@keyframes sutilPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Adaptación para pantallas móviles pequeñas (se centra un poco más) */
+@media (max-width: 600px) {
+    .floating-install-btn {
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 16px;
+        font-size: 13px;
     }
 }

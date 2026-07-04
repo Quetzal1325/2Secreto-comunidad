@@ -1,18 +1,9 @@
 {
-  "name": "2Secreto - Comunidad Anónima",
   "short_name": "2Secreto",
-  "description": "Comparte y lee secretos de forma totalmente anónima.",
-  "start_url": "/index.html",
+  "name": "2Secreto - Comunidad Anónima",
+  "start_url": "index.html",
+  "background_color": "#ffffff",
   "display": "standalone",
-  "background_color": "#f0f4f8",
   "theme_color": "#c471ed",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/566/566058.png",
-      "sizes": "512512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
+  "orientation": "portrait"
 }

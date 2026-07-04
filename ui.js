@@ -114,18 +114,34 @@ export function pintarSecretos(secretos) {
         // Verificamos si lleva la etiqueta de alerta morbosa (NSFW)
         const etiquetaNsfw = secreto.es_nsfw ? `<span class="badge-nsfw">🌶️ NSFW</span>` : "";
 
-        // Verificamos si tiene un código de Tmpy adjunto para renderizar el hipervínculo multimedia
+        // ui.js - Busca el bloque de Tmpy dentro de la función pintarSecretos y reemplázalo por este:
+
+        // 🖼️ FILTRO INTELIGENTE DE TMPY (Expira en 60 minutos)
         let enlaceTmpyHtml = "";
         if (secreto.tmpy_code && secreto.tmpy_code.trim() !== "") {
-            const urlCompleta = `https://www.tmpy.net/view/${secreto.tmpy_code.trim()}`;
-            enlaceTmpyHtml = `
-                <div style="margin-top: 12px; background-color: #fff5f5; border: 1px dashed #ff4757; padding: 10px; border-radius: 6px; text-align: center;">
-                    <p style="margin: 0 0 8px 0; font-size: 12px; color: #555; font-weight: bold;">🖼️ Este secreto incluye contenido multimedia externo:</p>
-                    <a href="${urlCompleta}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #ff4757; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(255,71,87,0.2); transition: transform 0.2s;">
-                        🔗 Ver Imagen en Tmpy
-                    </a>
-                </div>
-            `;
+            
+            // Calculamos los minutos exactos que han pasado desde que se publicó
+            const ahora = new Date();
+            const fechaSecreto = new Date(secreto.fecha.seconds * 1000);
+            const diferenciaMs = ahora - fechaSecreto;
+            const minutosTranscurridos = Math.floor(diferenciaMs / 60000);
+
+            // 🛡️ Si han pasado MENOS de 60 minutos, el link sigue vivo y lo mostramos
+            if (minutosTranscurridos < 60) {
+                const urlCompleta = `https://www.tmpy.net/view/${secreto.tmpy_code.trim()}`;
+                enlaceTmpyHtml = `
+                    <div class="tmpy-container" style="margin-top: 12px; background-color: #fff5f5; border: 1px dashed #ff4757; padding: 10px; border-radius: 6px; text-align: center;">
+                        <p style="margin: 0 0 8px 0; font-size: 12px; color: #555; font-weight: bold;">🖼️ Este secreto incluye contenido multimedia externo:</p>
+                        <a href="${urlCompleta}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #ff4757; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(255,71,87,0.2); transition: transform 0.2s;">
+                            🔗 Ver Imagen en Tmpy
+                        </a>
+                        <p style="margin: 5px 0 0 0; font-size: 10px; color: #ff4757; font-style: italic;">⏱️ Este enlace caducará pronto (Máx. 60 min desde su publicación)</p>
+                    </div>
+                `;
+            } else {
+                // Si ya pasó la hora, imprimimos un log discreto en consola y el HTML se queda vacío
+                console.log(`Enlace Tmpy del secreto ${secreto.id} omitido por expiración (+60 min).`);
+            }
         }
 
         // Calculamos dinámicamente el tiempo transcurrido
