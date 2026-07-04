@@ -81,7 +81,7 @@ export function showAppView(user) {
     }
 }
 
-// 4. RENDERIZAR LAS TARJETAS DE SECRETOS EN EL FEED
+// 4. RENDERIZAR LAS TARJETAS DE SECRETOS EN EL FEED (CON TOTAL DE REACCIONES)
 export function pintarSecretos(secretos) {
     const container = document.getElementById("secrets-container");
     if (!container) return;
@@ -98,8 +98,10 @@ export function pintarSecretos(secretos) {
         // Añadimos el atributo de autor para que comments.js lo capture de forma nativa
         secretoCard.setAttribute("data-author", secreto.autor_id || "");
         
+        // ui.js - Bloque del género corregido dentro de pintarSecretos
+
         // Determinamos el emoji del género y la clase CSS para el color
-        let emojiGenero = "👤";
+        let emojiGenero = "👤"; // Por defecto si es Otro o no existe
         let claseGenero = "genero-otro";
         const genero = secreto.autor_genero || "Otro";
 
@@ -109,12 +111,14 @@ export function pintarSecretos(secretos) {
         } else if (genero === "Mujer") {
             emojiGenero = "🚺";
             claseGenero = "genero-mujer";
+        } else {
+            // Si es "Otro" o viene vacío de cuentas viejas, le clavamos un ninja anónimo fino
+            emojiGenero = "🥷";
+            claseGenero = "genero-otro";
         }
 
         // Verificamos si lleva la etiqueta de alerta morbosa (NSFW)
         const etiquetaNsfw = secreto.es_nsfw ? `<span class="badge-nsfw">🌶️ NSFW</span>` : "";
-
-        // ui.js - Busca el bloque de Tmpy dentro de la función pintarSecretos y reemplázalo por este:
 
         // 🖼️ FILTRO INTELIGENTE DE TMPY (Expira en 60 minutos)
         let enlaceTmpyHtml = "";
@@ -147,6 +151,12 @@ export function pintarSecretos(secretos) {
         // Calculamos dinámicamente el tiempo transcurrido
         const tiempoHace = calcularTiempoHace(secreto.fecha);
 
+        // 📊 CONTEO EN CALIENTE: Sumamos las reacciones individuales de este secreto
+        const totalReacciones = (secreto.reacciones?.feliz || 0) + 
+                                (secreto.reacciones?.enojado || 0) + 
+                                (secreto.reacciones?.triste || 0) + 
+                                (secreto.reacciones?.asco || 0);
+
         // Armamos la maquetación de la tarjeta con el bloque de comentarios vacío por defecto
         secretoCard.innerHTML = `
             <div class="secret-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -166,28 +176,34 @@ export function pintarSecretos(secretos) {
             
             ${enlaceTmpyHtml}
             
-            <div class="interactions-bar" style="margin-top: 15px;">
-                <button class="react-btn" data-id="${secreto.id}" data-type="feliz">
-                    😊 <span class="count">${secreto.reacciones?.feliz || 0}</span>
-                </button>
-                <button class="react-btn" data-id="${secreto.id}" data-type="enojado">
-                    😡 <span class="count">${secreto.reacciones?.enojado || 0}</span>
-                </button>
-                <button class="react-btn" data-id="${secreto.id}" data-type="triste">
-                    😢 <span class="count">${secreto.reacciones?.triste || 0}</span>
-                </button>
-                <button class="react-btn" data-id="${secreto.id}" data-type="asco">
-                    🤢 <span class="count">${secreto.reacciones?.asco || 0}</span>
-                </button>
+            <div class="interactions-bar" style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 8px;">
+                    <button class="react-btn" data-id="${secreto.id}" data-type="feliz">
+                        😊 <span class="count">${secreto.reacciones?.feliz || 0}</span>
+                    </button>
+                    <button class="react-btn" data-id="${secreto.id}" data-type="enojado">
+                        😡 <span class="count">${secreto.reacciones?.enojado || 0}</span>
+                    </button>
+                    <button class="react-btn" data-id="${secreto.id}" data-type="triste">
+                        😢 <span class="count">${secreto.reacciones?.triste || 0}</span>
+                    </button>
+                    <button class="react-btn" data-id="${secreto.id}" data-type="asco">
+                        🤢 <span class="count">${secreto.reacciones?.asco || 0}</span>
+                    </button>
+                </div>
 
-                <button class="comment-toggle-btn" data-id="${secreto.id}">
+                <span class="total-reactions-badge" style="font-size: 11.5px; font-weight: bold; color: var(--accent-color); background: rgba(196, 113, 237, 0.07); padding: 4px 10px; border-radius: 12px; border: 1px dashed rgba(196, 113, 237, 0.25); white-space: nowrap;">
+                    ✨ ${totalReacciones} ${totalReacciones === 1 ? 'reacción' : 'reacciones'}
+                </span>
+
+                <button class="comment-toggle-btn" data-id="${secreto.id}" style="margin-left: auto;">
                     💬 Ver Comentarios
                 </button>
             </div>
 
             <div class="comments-section" id="comments-box-${secreto.id}" style="display: none; margin-top: 15px;">
                 <div class="comments-list" id="comments-list-${secreto.id}"></div>
-                </div>
+            </div>
         `;
         container.appendChild(secretoCard);
     });
