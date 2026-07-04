@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2Secreto - Comunidad Anónima</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="navbar-container">
+            <!-- Izquierda: Logo y Slogan -->
+            <div class="nav-logo-box">
+                <h1>🤫 2Secreto</h1>
+                <p>Comunidad Anónima</p>
+            </div>
+
+            <!-- Centro: Filtros de Contenido (Solo visibles si está logueado) -->
+            <div id="nav-filters" class="nav-filters" style="display: none;">
+                <button id="tab-normal" class="nav-tab-btn active">😇 Normales</button>
+                <button id="tab-nsfw" class="nav-tab-btn">🌶️ NSFW</button>
+            </div>
+
+            <!-- Derecha: Perfil / Menú de Usuario (Solo visible si está logueado) -->
+            <div id="nav-user-menu" class="nav-user-menu" style="display: none;">
+                <button id="nav-publish-trigger" class="nav-action-btn">➕ Publicar</button>
+                <div class="dropdown">
+                    <button class="dropbtn">👤 Mi Perfil ▼</button>
+                    <div class="dropdown-content">
+                        <a href="#" id="my-secrets-btn">📝 Mis Secretos</a>
+                        <a href="#" id="my-comments-btn">💬 Mis Comentarios</a>
+                        <hr>
+                        <a href="#" id="logout-btn-nav" class="logout-link">🚪 Cerrar Sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- SECCIÓN DE AUTENTICACIÓN REFACTORIZADA -->
+    <section id="auth-section">
+        <div class="auth-card">
+            <h2 id="auth-title">Crear Cuenta Anónima</h2>
+            <form id="auth-form">
+                <!-- Inputs obligatorios siempre visibles -->
+                <div class="form-group">
+                    <label for="email">Correo electrónico (permanecerá oculto):</label>
+                    <input type="email" id="email" placeholder="ejemplo@anonimo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" placeholder="Mínimo 6 caracteres" required>
+                </div>
+
+                <!-- Inputs extra que ocultaremos dinámicamente -->
+                <div id="extra-fields">
+                    <div class="form-group">
+                        <label for="age">Edad:</label>
+                        <input type="number" id="age" min="13" max="99" placeholder="18" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Género:</label>
+                        <select id="gender" required>
+                            <option value="" disabled selected>Selecciona tu género</option>
+                            <option value="Hombre">Hombre</option>
+                            <option value="Mujer">Mujer</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- LOS DOS BOTONES ACCIÓN (Fijos) -->
+                <button type="submit" id="auth-btn-register" style="margin-bottom: 10px;">Registrarse</button>
+                <button type="submit" id="auth-btn-login" style="display: none; background-color: #4cd137;">Entrar</button>
+            </form>
+            
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border-color);">
+            
+            <!-- Links sencillos fijos -->
+            <p id="toggle-to-login" style="text-align: center; font-size: 14px; color: var(--text-muted);">
+                ¿Ya tienes cuenta? <span id="go-to-login" style="color: var(--accent-color); cursor: pointer; font-weight: bold;">Inicia sesión aquí</span>
+            </p>
+            <p id="toggle-to-register" style="text-align: center; font-size: 14px; color: var(--text-muted); display: none;">
+                ¿No tienes cuenta? <span id="go-to-register" style="color: var(--accent-color); cursor: pointer; font-weight: bold;">Regístrate aquí</span>
+            </p>
+        </div>
+    </section>
+
+        <!-- SECCIÓN DEL FEED PRINCIPAL -->
+        <section id="app-section" style="display: none;">
+            
+            <!-- CONTENEDOR FLOTANTE / OCULTO PARA PUBLICAR -->
+            <div id="publish-container" class="publish-card" style="display: none; margin-bottom: 25px;">
+                <h3>Cuéntanos tu secreto...</h3>
+                <form id="secret-form">
+                    <textarea id="secret-text" rows="4" placeholder="Escribe aquí de forma anónima..." required></textarea>
+                    <div class="form-row" style="margin: 10px 0;">
+                        <label class="nsfw-label">
+                            <input type="checkbox" id="secret-nsfw"> 🌶️ Marcar como contenido NSFW / Morboso
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" id="publish-btn">Publicar Anónimamente</button>
+                        <button type="button" id="cancel-publish-btn" style="background-color: #e1e8ed; color: #333; width: auto; padding: 0 15px;">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TÍTULO DINÁMICO DEL FEED -->
+            <h2 id="feed-title" style="margin-bottom: 15px; font-size: 20px; color: var(--text-muted);">😇 Secretos Recientes</h2>
+
+            <!-- Contenedor donde se pintarán los secretos -->
+            <div id="secrets-container"></div>
+        </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
