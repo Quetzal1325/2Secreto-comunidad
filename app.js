@@ -123,7 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- INTERACCIONES DEL FEED (REACCIONES Y COMENTARIOS) ---
     secretsContainer.addEventListener("click", async (e) => {
         // A) Reacciones
         const botonReaccion = e.target.closest(".react-btn");
@@ -149,16 +148,35 @@ document.addEventListener("DOMContentLoaded", () => {
                 box.style.display = "none";
                 e.target.innerText = "💬 Ver Comentarios";
             }
+            return;
+        }
+
+        // C) NUEVO: Denunciar Comentarios (Moderación Automática)
+        const btnReportarComentario = e.target.closest(".report-comment-btn");
+        if (btnReportarComentario) {
+            const comentarioId = btnReportarComentario.getAttribute("data-id");
+            
+            if (confirm("¿Estás seguro de que deseas denunciar este comentario? Al acumular 5 reportes se ocultará automáticamente.")) {
+                const { denunciarComentario } = await import("./comments.js");
+                const exito = await denunciarComentario(comentarioId);
+                if (exito) {
+                    alert("Gracias por tu reporte. La comunidad moderará el contenido.");
+                    btnReportarComentario.style.opacity = "0.3";
+                    btnReportarComentario.disabled = true;
+                    btnReportarComentario.innerText = "🚩 Reportado";
+                }
+            }
+            return;
         }
     });
 
-    // C) Enviar un nuevo comentario (Inyectando dueño del secreto para la alerta)
+    // D) Enviar un nuevo comentario (Inyectando dueño del secreto para la alerta)
     secretsContainer.addEventListener("submit", async (e) => {
         if (e.target.classList.contains("comment-form")) {
             e.preventDefault();
             
             const secretoId = e.target.getAttribute("data-id");
-            const dueñoSecretoId = e.target.getAttribute("data-author"); // <-- Jalamos el autor
+            const dueñoSecretoId = e.target.getAttribute("data-author"); 
             const input = e.target.querySelector("input");
             const texto = input.value;
 
