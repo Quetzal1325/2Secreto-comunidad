@@ -109,15 +109,23 @@
         <section id="app-section" style="display: none;">
             
             <!-- CONTENEDOR FLOTANTE / OCULTO PARA PUBLICAR -->
+            <!-- CONTENEDOR FLOTANTE / OCULTO PARA PUBLICAR ACTUALIZADO -->
             <div id="publish-container" class="publish-card" style="display: none; margin-bottom: 25px;">
                 <h3>Cuéntanos tu secreto...</h3>
                 <form id="secret-form">
                     <textarea id="secret-text" rows="4" placeholder="Escribe aquí de forma anónima..." required></textarea>
+                    
                     <div class="form-row" style="margin: 10px 0;">
                         <label class="nsfw-label">
                             <input type="checkbox" id="secret-nsfw"> 🌶️ Marcar como contenido NSFW / Morboso
                         </label>
                     </div>
+
+                    <!-- NUEVO: Input opcional para el código Tmpy -->
+                    <div class="form-row" style="margin-bottom: 15px;">
+                        <input type="text" id="secret-tmpy" placeholder="Código Tmpy de 8 dígitos (Opcional, ej: 1378ef05)" maxlength="8" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box;">
+                    </div>
+
                     <div style="display: flex; gap: 10px;">
                         <button type="submit" id="publish-btn">Publicar Anónimamente</button>
                         <button type="button" id="cancel-publish-btn" style="background-color: #e1e8ed; color: #333; width: auto; padding: 0 15px;">Cancelar</button>

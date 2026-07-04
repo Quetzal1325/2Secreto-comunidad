@@ -20,16 +20,17 @@ let unsubscribeFeed = null;
 // 1. GUARDAR SECRETO
 // secrets.js - Busca y reemplaza la función guardarSecreto:
 
-export async function guardarSecreto(texto, esNsfw) {
+// secrets.js - Busca e integra el campo 'tmpy_code' en guardarSecreto:
+
+export async function guardarSecreto(texto, esNsfw, tmpyCode) { // <-- Añadimos parámetro
     try {
         const user = auth.currentUser;
         if (!user) return alert("Debes estar logueado para publicar.");
 
-        // NUEVO: Jalamos el documento del perfil del usuario en Firestore para saber su edad y género
         const userDocRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userDocRef);
         
-        let edad = 18; // Valores por defecto por si acaso
+        let edad = 18;
         let genero = "Otro";
 
         if (userSnap.exists()) {
@@ -37,18 +38,19 @@ export async function guardarSecreto(texto, esNsfw) {
             genero = userSnap.data().genero;
         }
 
-        // Guardamos el secreto incluyendo ahora la edad y el género del autor
+        // Estructura del documento actualizado
         await addDoc(collection(db, "secrets"), {
             texto: texto,
             es_nsfw: esNsfw,
+            tmpy_code: tmpyCode ? tmpyCode.trim() : "", // <-- NUEVO: Guardamos el código limpio si existe
             autor_id: user.uid,
-            autor_edad: edad,       // <-- Campo nuevo
-            autor_genero: genero,   // <-- Campo nuevo
+            autor_edad: edad,
+            autor_genero: genero,
             fecha: new Date(),
             reacciones: { feliz: 0, enojado: 0, triste: 0, asco: 0 }
         });
 
-        console.log("¡Secreto publicado con éxito con su info de perfil! 🤫");
+        console.log("¡Secreto publicado con éxito! 🤫");
         return true;
     } catch (error) {
         console.error("Error al publicar secreto:", error);

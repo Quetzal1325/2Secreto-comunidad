@@ -109,13 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- ENVÍO DE UN NUEVO SECRETO ---
+    // app.js - Actualiza el envío del formulario de secretos:
     secretForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const texto = document.getElementById("secret-text").value;
         const esNsfw = document.getElementById("secret-nsfw").checked;
+        const tmpyCode = document.getElementById("secret-tmpy").value; // <-- NUEVO
 
-        const exito = await guardarSecreto(texto, esNsfw);
+        const exito = await guardarSecreto(texto, esNsfw, tmpyCode); // <-- Pasamos el código
         if (exito) {
             secretForm.reset();
             publishContainer.style.display = "none";

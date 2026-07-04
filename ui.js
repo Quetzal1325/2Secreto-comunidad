@@ -83,7 +83,6 @@ export function showAppView(user) {
     }
 }
 
-// 4. PINTAR LOS SECRETOS EN EL FEED PRINCIPAL
 export function pintarSecretos(secretos) {
     const container = document.getElementById("secrets-container");
     container.innerHTML = ""; 
@@ -113,6 +112,20 @@ export function pintarSecretos(secretos) {
         // Verificamos si lleva la etiqueta de alerta morbosa (NSFW)
         const etiquetaNsfw = secreto.es_nsfw ? `<span class="badge-nsfw">🌶️ NSFW</span>` : "";
 
+        // NUEVO: Verificamos si tiene un código de Tmpy adjunto para renderizar el hipervínculo
+        let enlaceTmpyHtml = "";
+        if (secreto.tmpy_code && secreto.tmpy_code.trim() !== "") {
+            const urlCompleta = `https://www.tmpy.net/view/${secreto.tmpy_code.trim()}`;
+            enlaceTmpyHtml = `
+                <div style="margin-top: 12px; background-color: #fff5f5; border: 1px dashed #ff4757; padding: 10px; border-radius: 6px; text-align: center;">
+                    <p style="margin: 0 0 8px 0; font-size: 12px; color: #555; font-weight: bold;">🖼️ Este secreto incluye contenido multimedia externo:</p>
+                    <a href="${urlCompleta}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #ff4757; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(255,71,87,0.2); transition: transform 0.2s;">
+                        🔗 Ver Imagen en Tmpy
+                    </a>
+                </div>
+            `;
+        }
+
         // Calculamos dinámicamente el tiempo transcurrido
         const tiempoHace = calcularTiempoHace(secreto.fecha);
 
@@ -127,8 +140,11 @@ export function pintarSecretos(secretos) {
 
             <p class="secret-text">${secreto.texto}</p>
             
+            <!-- Inyección del botón de Tmpy si el código existe -->
+            ${enlaceTmpyHtml}
+            
             <!-- Barra de interacciones y caritas -->
-            <div class="interactions-bar">
+            <div class="interactions-bar" style="margin-top: 15px;">
                 <button class="react-btn" data-id="${secreto.id}" data-type="feliz">
                     😊 <span class="count">${secreto.reacciones?.feliz || 0}</span>
                 </button>
