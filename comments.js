@@ -1,4 +1,4 @@
-// comments.js - Gestión de comentarios con hilos agrupados, Textarea Auto-Grow y Límite de 500 caracteres
+// comments.js - Gestión de comentarios con hilos agrupados, corregida y blindada contra duplicados
 import { 
     collection, 
     addDoc, 
@@ -20,7 +20,6 @@ export function escucharComentarios(secretoId) {
 
     matarEscuchasComentarios();
 
-    // Intentamos jalar el ID del autor desde el contenedor o la tarjeta padre
     const tarjetaPadre = boxContainer.closest(".secret-card");
     const dueñoSecretoId = tarjetaPadre ? tarjetaPadre.getAttribute("data-author") : null;
 
@@ -48,9 +47,15 @@ export function escucharComentarios(secretoId) {
                 }
             });
 
-            // Función auxiliar para renderizar un comentario en el HTML
+            // Función auxiliar para renderizar un comentario en el HTML (BLINDADA)
             function crearElementoComentario(comentario, esRespuesta = false) {
+                // 🛡️ CONTROL ANTI-DUPLICADO DE DOM: Si el ID ya existe en la caja, no hagas nada
+                if (listContainer.querySelector(`[data-comment-id="${comentario.id}"]`)) {
+                    return null; 
+                }
+
                 const div = document.createElement("div");
+                div.setAttribute("data-comment-id", comentario.id); // Guardamos el ID único para rastrearlo
                 div.style.padding = "8px 0";
                 div.style.borderBottom = "1px solid var(--border-color)";
                 div.style.fontSize = "13.5px";
@@ -65,7 +70,7 @@ export function escucharComentarios(secretoId) {
                 div.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
                         <span style="color: var(--text-main); word-break: break-word;">
-                            <strong style="color: var(--text-main);">Anónimo:</strong> ${comentario.texto}
+                            <strong style="color: var(--text-main);">${esRespuesta ? '↪️ Respuesta' : '👤 Anónimo'}:</strong> ${comentario.texto}
                         </span>
                         <button class="reply-comment-btn" data-id="${secretoId}" data-comentario-id="${esRespuesta ? comentario.padre_id : comentario.id}" style="background: none; border: none; cursor: pointer; font-size: 11px; color: var(--accent-color); opacity: 0.8; padding: 2px 5px; white-space: nowrap; font-weight: bold;">
                             💬 Responder
@@ -75,42 +80,123 @@ export function escucharComentarios(secretoId) {
                 return div;
             }
 
+            // 🌟 RENDERIZADO ÚNICO CORREGIDO: Eliminamos el bloque duplicado que causaba el doble envío visual
             principales.forEach((principal) => {
-                listContainer.appendChild(crearElementoComentario(principal, false));
+                const elemPrincipal = crearElementoComentario(principal, false);
+                if (elemPrincipal) listContainer.appendChild(elemPrincipal);
 
                 const respuestasDelPadre = respuestas.filter(r => r.padre_id === principal.id);
                 respuestasDelPadre.forEach((respuesta) => {
-                    listContainer.appendChild(crearElementoComentario(respuesta, true));
+                    const elemRespuesta = crearElementoComentario(respuesta, true);
+                    if (elemRespuesta) listContainer.appendChild(elemRespuesta);
                 });
             });
         }
 
-        // 🌟 INYECCIÓN DEL FORMULARIO ACTUALIZADO CON TEXTAREA INTELIGENTE Y CONTADOR ANTISPAM
-        // Revisamos si ya existe el formulario para no duplicarlo en cada snapshot
         let formularioExistente = boxContainer.querySelector(".comment-form-container");
         if (!formularioExistente) {
             const formDiv = document.createElement("div");
             formDiv.className = "comment-form-container";
             formDiv.innerHTML = `
-                <form class="comment-form" data-id="${secretoId}" data-author="${dueñoSecretoId || ''}" style="display: flex; flex-direction: column; gap: 5px; width: 100%; margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                <form class="comment-form" data-id="${secretoId}" data-author="${dueñoSecretoId || ''}" data-padre-id="" style="display: flex; flex-direction: column; gap: 5px; width: 100%; margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
                     <div style="display: flex; gap: 8px; align-items: flex-end; width: 100%;">
-                        <!-- Textarea auto-ajustable con límite físico de 500 caracteres -->
                         <textarea class="comment-textarea" rows="1" maxlength="500" placeholder="Escribe un comentario..." required style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 13.5px; resize: none; overflow-y: hidden; box-sizing: border-box; background: var(--bg-card); color: var(--text-main); font-family: inherit; line-height: 1.4; max-height: 120px;"></textarea>
                         <button type="submit" class="submit-comment-btn" style="background-color: var(--accent-color); color: white; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; font-size: 13.5px; cursor: pointer; height: 38px; white-space: nowrap;">Enviar</button>
                     </div>
-                    <!-- Contador de caracteres dinámico discreto -->
                     <span class="char-counter" style="font-size: 11px; color: gray; text-align: right; margin-right: 5px; margin-top: 2px;">0 / 500</span>
                 </form>
             `;
             boxContainer.appendChild(formDiv);
         }
-
     }, (error) => {
         console.error("Error al escuchar comentarios:", error);
     });
 }
 
-// 2. GUARDAR UN NUEVO COMENTARIO
+// 🛡️ --- CONTROL DE ESCUCHADORES GLOBALES CON FILTRO ANTI-DUPLICADO ---
+if (!window.comentariosListenersActivos) {
+    window.comentariosListenersActivos = true;
+
+    // 2. ESCUCHADOR DE CLICS PARA SELECCIONAR RESPUESTAS (Con candado de invitado integrado)
+    document.addEventListener("click", (e) => {
+        if (e.target && e.target.classList.contains("reply-comment-btn")) {
+            
+            // 🛡️ Si no hay usuario logueado, disparamos la función global de alerta
+            if (!auth.currentUser) {
+                if (typeof window.mostrarAlertaInvitado === "function") {
+                    window.mostrarAlertaInvitado();
+                } else {
+                    alert("Necesitas una cuenta anónima para poder responder.");
+                }
+                return;
+            }
+
+            const secretoId = e.target.getAttribute("data-id");
+            const comentarioId = e.target.getAttribute("data-comentario-id");
+            
+            const boxContainer = document.getElementById(`comments-box-${secretoId}`);
+            if (!boxContainer) return;
+            
+            const formulario = boxContainer.querySelector(".comment-form");
+            const textarea = boxContainer.querySelector(".comment-textarea");
+            
+            if (formulario && textarea) {
+                formulario.setAttribute("data-padre-id", comentarioId);
+                textarea.placeholder = "Escribe tu respuesta al comentario...";
+                textarea.focus();
+            }
+        }
+    });
+
+    // 3. ESCUCHADOR PARA ENVIAR EL FORMULARIO (Comentario o Respuesta)
+    document.addEventListener("submit", async (e) => {
+        if (e.target && e.target.classList.contains("comment-form")) {
+            e.preventDefault();
+            const formulario = e.target;
+            const secretoId = formulario.getAttribute("data-id");
+            const dueñoSecretoId = formulario.getAttribute("data-author");
+            const padreId = formulario.getAttribute("data-padre-id") || null;
+            
+            const textarea = formulario.querySelector(".comment-textarea");
+            const texto = textarea.value.trim();
+            if (!texto) return;
+
+            const btn = formulario.querySelector(".submit-comment-btn");
+            if (btn) btn.disabled = true;
+
+            await guardarComentario(secretoId, texto, dueñoSecretoId, padreId);
+            
+            // Restaurar estado original limpio
+            textarea.value = "";
+            textarea.style.height = "auto";
+            formulario.setAttribute("data-padre-id", "");
+            textarea.placeholder = "Escribe un comentario...";
+            
+            const counter = formulario.querySelector(".char-counter");
+            if (counter) counter.innerText = "0 / 500";
+            if (btn) btn.disabled = false;
+        }
+    });
+
+    // 4. ESCUCHADOR PARA EFECTO AUTO-GROW Y CONTADOR DE CARACTERES
+    document.addEventListener("input", (e) => {
+        if (e.target && e.target.classList.contains("comment-textarea")) {
+            const textarea = e.target;
+            textarea.style.height = "auto";
+            textarea.style.height = textarea.scrollHeight + "2px";
+            
+            const form = textarea.closest("form");
+            if (form) {
+                const counter = form.querySelector(".char-counter");
+                if (counter) {
+                    counter.innerText = `${textarea.value.length} / 500`;
+                }
+            }
+        }
+    });
+}
+
+// 5. GUARDAR UN NUEVO COMENTARIO EN FIRESTORE
 export async function guardarComentario(secretoId, texto, dueñoSecretoId, padreId = null) {
     try {
         const user = auth.currentUser;
@@ -138,7 +224,7 @@ export async function guardarComentario(secretoId, texto, dueñoSecretoId, padre
     }
 }
 
-// 3. CARGAR HISTORIAL ESTÁTICO DE MIS COMENTARIOS
+// 6. CARGAR HISTORIAL ESTÁTICO DE MIS COMENTARIOS
 export async function cargarMisComentarios() {
     const container = document.getElementById("secrets-container");
     if (!container) return;
@@ -182,6 +268,7 @@ export async function cargarMisComentarios() {
     }
 }
 
+// 7. DESCONECTAR ESCUCHAS EN TIEMPO REAL
 export function matarEscuchasComentarios() {
     if (unsubscribeComments) {
         unsubscribeComments();

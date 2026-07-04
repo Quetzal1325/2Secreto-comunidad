@@ -17,7 +17,7 @@ import { pintarSecretos } from "./ui.js";
 
 let unsubscribeFeed = null;
 
-// 1. GUARDAR SECRETO (CON INICIALIZACIÓN DE REPORTES)
+// secrets.js - Función guardarSecreto ACTUALIZADA con detección automática de bandera de país
 export async function guardarSecreto(texto, esNsfw, tmpyCode) { 
     try {
         const user = auth.currentUser;
@@ -34,7 +34,40 @@ export async function guardarSecreto(texto, esNsfw, tmpyCode) {
             genero = userSnap.data().genero;
         }
 
-        // Estructura del documento con el escudo de reportes en 0
+        // 🗺️ DETECCIÓN AUTOMÁTICA DE PAÍS Y BANDERA (Nativa y sin APIs externas caras)
+        let codigoPais = "UN";
+        let banderaEmoji = "🏳️";
+        try {
+            // Captura la zona horaria del navegador (ej: "America/Mexico_City")
+            const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            // Mapeo básico de zonas horarias comunes a sus banderas
+            if (zonaHoraria.includes("Mexico")) { codigoPais = "MX"; banderaEmoji = "🇲🇽"; }
+            else if (zonaHoraria.includes("Bogota")) { codigoPais = "CO"; banderaEmoji = "🇨🇴"; }
+            else if (zonaHoraria.includes("Buenos_Aires")) { codigoPais = "AR"; banderaEmoji = "🇦🇷"; }
+            else if (zonaHoraria.includes("Santiago")) { codigoPais = "CL"; banderaEmoji = "🇨🇱"; }
+            else if (zonaHoraria.includes("Lima")) { codigoPais = "PE"; banderaEmoji = "🇵🇪"; }
+            else if (zonaHoraria.includes("Caracas")) { codigoPais = "VE"; banderaEmoji = "🇻🇪"; }
+            else if (zonaHoraria.includes("Madrid")) { codigoPais = "ES"; banderaEmoji = "🇪🇸"; }
+            else if (zonaHoraria.includes("Montevideo")) { codigoPais = "UY"; banderaEmoji = "🇺🇾"; }
+            else if (zonaHoraria.includes("Quito")) { codigoPais = "EC"; banderaEmoji = "🇪🇨"; }
+            else if (zonaHoraria.includes("Guatemala")) { codigoPais = "GT"; banderaEmoji = "🇬🇹"; }
+            else if (zonaHoraria.includes("San_Jose")) { codigoPais = "CR"; banderaEmoji = "🇨🇷"; }
+            else {
+                // Alternativa genérica basada en el lenguaje del navegador
+                const lang = navigator.language || "es-MX";
+                const parts = lang.split("-");
+                if (parts.length > 1) {
+                    codigoPais = parts[1].toUpperCase();
+                    // Conversión matemática de letras ISO a emojis de banderas
+                    banderaEmoji = String.fromCodePoint(...[...codigoPais].map(c => 127397 + c.charCodeAt(0)));
+                }
+            }
+        } catch (e) {
+            console.error("Error al detectar país:", e);
+        }
+
+        // Estructura del documento con escudo de reportes y datos de ubicación
         await addDoc(collection(db, "secrets"), {
             texto: texto,
             es_nsfw: esNsfw,
@@ -42,9 +75,11 @@ export async function guardarSecreto(texto, esNsfw, tmpyCode) {
             autor_id: user.uid,
             autor_edad: edad,
             autor_genero: genero,
+            autor_pais: codigoPais,
+            autor_bandera: banderaEmoji, // <-- NUEVO: Se guarda la bandera directo
             fecha: new Date(),
             reacciones: { feliz: 0, enojado: 0, triste: 0, asco: 0 },
-            reportes: 0 // <-- NUEVO: Todos los secretos nacen limpios
+            reportes: 0 
         });
 
         console.log("¡Secreto publicado con éxito! 🤫");

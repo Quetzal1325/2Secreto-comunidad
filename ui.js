@@ -1,4 +1,4 @@
-// ui.js - Manejo de la interfaz visual totalmente actualizado
+// ui.js - Manejo de la interfaz visual con soporte de autenticación, bordes de género y banderas
 
 // 1. FUNCIÓN DE UTILIDAD: Calcular tiempo relativo (Hace x min, Hace x hr)
 function calcularTiempoHace(fechaFirestore) {
@@ -24,50 +24,45 @@ export function toggleAuthMode(isLogin) {
     const ageInput = document.getElementById('age');
     const genderInput = document.getElementById('gender');
     
-    // Botones físicos fijos
     const btnRegister = document.getElementById('auth-btn-register');
     const btnLogin = document.getElementById('auth-btn-login');
     
-    // Textos inferiores alternables
     const toggleToLogin = document.getElementById('toggle-to-login');
     const toggleToRegister = document.getElementById('toggle-to-register');
 
     if (isLogin) {
-        title.innerText = "Iniciar Sesión";
-        extraFields.style.display = "none"; 
-        ageInput.removeAttribute('required');
-        genderInput.removeAttribute('required');
+        if (title) title.innerText = "Iniciar Sesión";
+        if (extraFields) extraFields.style.display = "none"; 
+        if (ageInput) ageInput.removeAttribute('required');
+        if (genderInput) genderInput.removeAttribute('required');
         
-        btnRegister.style.display = "none";
-        btnLogin.style.display = "block";
+        if (btnRegister) btnRegister.style.display = "none";
+        if (btnLogin) btnLogin.style.display = "block";
         
-        toggleToLogin.style.display = "none";
-        toggleToRegister.style.display = "block";
+        if (toggleToLogin) toggleToLogin.style.display = "none";
+        if (toggleToRegister) toggleToRegister.style.display = "block";
     } else {
-        title.innerText = "Crear Cuenta Anónima";
-        extraFields.style.display = "block"; 
-        ageInput.setAttribute('required', '');
-        genderInput.setAttribute('required', '');
+        if (title) title.innerText = "Crear Cuenta Anónima";
+        if (extraFields) extraFields.style.display = "block"; 
+        if (ageInput) ageInput.setAttribute('required', '');
+        if (genderInput) genderInput.setAttribute('required', '');
         
-        btnRegister.style.display = "block";
-        btnLogin.style.display = "none";
+        if (btnRegister) btnRegister.style.display = "block";
+        if (btnLogin) btnLogin.style.display = "none";
         
-        toggleToLogin.style.display = "block";
-        toggleToRegister.style.display = "none";
+        if (toggleToLogin) toggleToLogin.style.display = "block";
+        if (toggleToRegister) toggleToRegister.style.display = "none";
     }
 }
 
-// ui.js - SECCIÓN 3 CORREGIDA: Deja la navbar visible para que los invitados tengan menú dinámico
-
+// 3. MOSTRAR LA VISTA DE LA APP
 export function showAppView(user) {
     const authSection = document.getElementById('auth-section');
     const appSection = document.getElementById('app-section');
     
-    // Elementos de la barra superior fija
     const navFilters = document.getElementById('nav-filters');
     const navUserMenu = document.getElementById('nav-user-menu');
 
-    // 🌟 Aseguramos que la navbar SIEMPRE se muestre (Invitados y Logueados la usan)
     if (navFilters) navFilters.style.display = "flex";
     if (navUserMenu) navUserMenu.style.display = "flex";
 
@@ -75,13 +70,12 @@ export function showAppView(user) {
         if (authSection) authSection.style.display = "none";
         if (appSection) appSection.style.display = "block";
     } else {
-        // En modo invitado mandamos a la app principal, no bloqueamos con el login
         if (authSection) authSection.style.display = "none";
         if (appSection) appSection.style.display = "block";
     }
 }
 
-// 4. RENDERIZAR LAS TARJETAS DE SECRETOS EN EL FEED (CON TOTAL DE REACCIONES)
+// 4. RENDERIZAR LAS TARJETAS DE SECRETOS EN EL FEED (CON BORDES Y BANDERAS)
 export function pintarSecretos(secretos) {
     const container = document.getElementById("secrets-container");
     if (!container) return;
@@ -94,43 +88,42 @@ export function pintarSecretos(secretos) {
 
     secretos.forEach((secreto) => {
         const secretoCard = document.createElement("div");
-        secretoCard.className = "secret-card";
-        // Añadimos el atributo de autor para que comments.js lo capture de forma nativa
-        secretoCard.setAttribute("data-author", secreto.autor_id || "");
         
-        // ui.js - Bloque del género corregido dentro de pintarSecretos
-
-        // Determinamos el emoji del género y la clase CSS para el color
-        let emojiGenero = "👤"; // Por defecto si es Otro o no existe
+        // 🎨 CLASE DINÁMICA DE GÉNERO
+        let emojiGenero = "👤"; 
         let claseGenero = "genero-otro";
+        let claseBordeColor = "card-otro"; 
         const genero = secreto.autor_genero || "Otro";
 
         if (genero === "Hombre") {
             emojiGenero = "🚹";
             claseGenero = "genero-hombre";
+            claseBordeColor = "card-hombre"; 
         } else if (genero === "Mujer") {
             emojiGenero = "🚺";
             claseGenero = "genero-mujer";
+            claseBordeColor = "card-mujer"; 
         } else {
-            // Si es "Otro" o viene vacío de cuentas viejas, le clavamos un ninja anónimo fino
             emojiGenero = "🥷";
             claseGenero = "genero-otro";
+            claseBordeColor = "card-otro"; 
         }
 
-        // Verificamos si lleva la etiqueta de alerta morbosa (NSFW)
+        secretoCard.className = `secret-card ${claseBordeColor}`;
+        secretoCard.setAttribute("data-author", secreto.autor_id || "");
+        
+        // 🇲🇽 Bandera de país por defecto si es viejo o el nuevo valor detectado
+        const bandera = secreto.autor_bandera || "🇲🇽"; 
         const etiquetaNsfw = secreto.es_nsfw ? `<span class="badge-nsfw">🌶️ NSFW</span>` : "";
 
-        // 🖼️ FILTRO INTELIGENTE DE TMPY (Expira en 60 minutos)
+        // Filtro Tmpy
         let enlaceTmpyHtml = "";
         if (secreto.tmpy_code && secreto.tmpy_code.trim() !== "") {
-            
-            // Calculamos los minutos exactos que han pasado desde que se publicó
             const ahora = new Date();
             const fechaSecreto = new Date(secreto.fecha.seconds * 1000);
             const diferenciaMs = ahora - fechaSecreto;
             const minutosTranscurridos = Math.floor(diferenciaMs / 60000);
 
-            // 🛡️ Si han pasado MENOS de 60 minutos, el link sigue vivo y lo mostramos
             if (minutosTranscurridos < 60) {
                 const urlCompleta = `https://www.tmpy.net/view/${secreto.tmpy_code.trim()}`;
                 enlaceTmpyHtml = `
@@ -142,26 +135,20 @@ export function pintarSecretos(secretos) {
                         <p style="margin: 5px 0 0 0; font-size: 10px; color: #ff4757; font-style: italic;">⏱️ Este enlace caducará pronto (Máx. 60 min desde su publicación)</p>
                     </div>
                 `;
-            } else {
-                // Si ya pasó la hora, imprimimos un log discreto en consola y el HTML se queda vacío
-                console.log(`Enlace Tmpy del secreto ${secreto.id} omitido por expiración (+60 min).`);
             }
         }
 
-        // Calculamos dinámicamente el tiempo transcurrido
         const tiempoHace = calcularTiempoHace(secreto.fecha);
-
-        // 📊 CONTEO EN CALIENTE: Sumamos las reacciones individuales de este secreto
         const totalReacciones = (secreto.reacciones?.feliz || 0) + 
                                 (secreto.reacciones?.enojado || 0) + 
                                 (secreto.reacciones?.triste || 0) + 
                                 (secreto.reacciones?.asco || 0);
 
-        // Armamos la maquetación de la tarjeta con el bloque de comentarios vacío por defecto
         secretoCard.innerHTML = `
             <div class="secret-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <span class="user-meta ${claseGenero}">
+                    <span class="user-meta ${claseGenero}" style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 15px;" title="País de origen">${bandera}</span> 
                         ${emojiGenero} ${secreto.autor_edad || '??'} años • <small style="color: var(--text-muted); font-weight: normal;">${tiempoHace}</small>
                     </span>
                     ${etiquetaNsfw}
