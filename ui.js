@@ -129,49 +129,53 @@ export function pintarSecretos(secretos) {
         // Calculamos dinámicamente el tiempo transcurrido
         const tiempoHace = calcularTiempoHace(secreto.fecha);
 
-        secretoCard.innerHTML = `
-            <!-- Cabecera con Meta-Datos e hilos de tiempo -->
-            <div class="secret-header">
-                <span class="user-meta ${claseGenero}">
-                    ${emojiGenero} ${secreto.autor_edad || '??'} años • <small style="color: #555; font-weight: normal;">${tiempoHace}</small>
-                </span>
-                ${etiquetaNsfw}
-            </div>
+        // ui.js - Fragmento actualizado dentro de pintarSecretos
 
-            <p class="secret-text">${secreto.texto}</p>
-            
-            <!-- Inyección del botón de Tmpy si el código existe -->
-            ${enlaceTmpyHtml}
-            
-            <!-- Barra de interacciones y caritas -->
-            <div class="interactions-bar" style="margin-top: 15px;">
-                <button class="react-btn" data-id="${secreto.id}" data-type="feliz">
-                    😊 <span class="count">${secreto.reacciones?.feliz || 0}</span>
-                </button>
-                <button class="react-btn" data-id="${secreto.id}" data-type="enojado">
-                    😡 <span class="count">${secreto.reacciones?.enojado || 0}</span>
-                </button>
-                <button class="react-btn" data-id="${secreto.id}" data-type="triste">
-                    😢 <span class="count">${secreto.reacciones?.triste || 0}</span>
-                </button>
-                <button class="react-btn" data-id="${secreto.id}" data-type="asco">
-                    🤢 <span class="count">${secreto.reacciones?.asco || 0}</span>
-                </button>
+secretoCard.innerHTML = `
+    <div class="secret-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span class="user-meta ${claseGenero}">
+                ${emojiGenero} ${secreto.autor_edad || '??'} años • <small style="color: var(--text-muted); font-weight: normal;">${tiempoHace}</small>
+            </span>
+            ${etiquetaNsfw}
+        </div>
+        
+        <button class="report-secret-btn" data-id="${secreto.id}" title="Denunciar este secreto" style="background: none; border: none; cursor: pointer; font-size: 12px; color: #ff4757; opacity: 0.6; padding: 4px 8px; font-weight: bold;">
+            🚩 Reportar
+        </button>
+    </div>
 
-                <button class="comment-toggle-btn" data-id="${secreto.id}">
-                    💬 Ver Comentarios
-                </button>
-            </div>
+    <p class="secret-text">${secreto.texto}</p>
+    
+    ${enlaceTmpyHtml}
+    
+    <div class="interactions-bar" style="margin-top: 15px;">
+        <button class="react-btn" data-id="${secreto.id}" data-type="feliz">
+            😊 <span class="count">${secreto.reacciones?.feliz || 0}</span>
+        </button>
+        <button class="react-btn" data-id="${secreto.id}" data-type="enojado">
+            😡 <span class="count">${secreto.reacciones?.enojado || 0}</span>
+        </button>
+        <button class="react-btn" data-id="${secreto.id}" data-type="triste">
+            😢 <span class="count">${secreto.reacciones?.triste || 0}</span>
+        </button>
+        <button class="react-btn" data-id="${secreto.id}" data-type="asco">
+            🤢 <span class="count">${secreto.reacciones?.asco || 0}</span>
+        </button>
 
-            <!-- Caja desplegable de Comentarios (Con data-author para las Alertas) -->
-            <div class="comments-section" id="comments-box-${secreto.id}" style="display: none; margin-top: 15px;">
-                <div class="comments-list" id="comments-list-${secreto.id}"></div>
-                <form class="comment-form" data-id="${secreto.id}" data-author="${secreto.autor_id || ''}" style="display: flex; margin-top: 10px;">
-                    <input type="text" placeholder="Escribe un comentario anónimo..." required style="flex: 1;">
-                    <button type="submit">Enviar</button>
-                </form>
-            </div>
-        `;
+        <button class="comment-toggle-btn" data-id="${secreto.id}">
+            💬 Ver Comentarios
+        </button>
+    </div>
+
+    <div class="comments-section" id="comments-box-${secreto.id}" style="display: none; margin-top: 15px;">
+        <div class="comments-list" id="comments-list-${secreto.id}"></div>
+        <form class="comment-form" data-id="${secreto.id}" data-author="${secreto.autor_id || ''}" style="display: flex; margin-top: 10px;">
+            <input type="text" placeholder="Escribe un comentario anónimo..." required style="flex: 1;">
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+`;
         container.appendChild(secretoCard);
     });
 }

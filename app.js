@@ -181,24 +181,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // C) Denunciar Comentarios (Moderación Automática)
-        const btnReportarComentario = e.target.closest(".report-comment-btn");
-        if (btnReportarComentario) {
-            const comentarioId = btnReportarComentario.getAttribute("data-id");
-            
-            if (confirm("¿Estás seguro de que deseas denunciar este comentario? Al acumular 5 reportes se ocultará automáticamente.")) {
-                const { denunciarComentario } = await import("./comments.js");
-                const exito = await denunciarComentario(comentarioId);
-                if (exito) {
-                    alert("Gracias por tu reporte. La comunidad moderará el contenido.");
-                    btnReportarComentario.style.opacity = "0.3";
-                    btnReportarComentario.disabled = true;
-                    btnReportarComentario.innerText = "🚩 Reportado";
-                }
-            }
-            return;
-        }
-
         // E) Evento para Responder a un comentario existente (Guardando el comentario_id padre)
         const btnResponderComentario = e.target.closest(".reply-comment-btn");
         if (btnResponderComentario) {
@@ -222,6 +204,45 @@ document.addEventListener("DOMContentLoaded", () => {
                     inputComentario.focus();
                 }
             }
+            return;
+        }
+
+        // app.js - Agregar dentro del eventListener de clics de secretsContainer:
+
+        // F) NUEVO: Denunciar Secreto Completo (Moderación del Feed)
+        const btnReportarSecreto = e.target.closest(".report-secret-btn");
+        if (btnReportarSecreto) {
+            const secretoId = btnReportarSecreto.getAttribute("data-id");
+            
+            Swal.fire({
+                title: '¿Denunciar secreto?',
+                text: "Si junta suficientes reportes se borrará permanentemente del feed principal.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4757',
+                cancelButtonColor: '#a4b0be',
+                confirmButtonText: 'Sí, denunciar',
+                cancelButtonText: 'Cancelar',
+                background: document.body.classList.contains('dark-mode') ? '#1e1e1e' : '#ffffff',
+                color: document.body.classList.contains('dark-mode') ? '#f5f6fa' : '#333333'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const { denunciarSecreto } = await import("./secrets.js");
+                    const exito = await denunciarSecreto(secretoId);
+                    if (exito) {
+                        Swal.fire({
+                            title: 'Secreto Reportado',
+                            text: 'La comunidad está moderando el feed principal.',
+                            icon: 'success',
+                            background: document.body.classList.contains('dark-mode') ? '#1e1e1e' : '#ffffff',
+                            color: document.body.classList.contains('dark-mode') ? '#f5f6fa' : '#333333'
+                        });
+                        btnReportarSecreto.style.opacity = "0.3";
+                        btnReportarSecreto.disabled = true;
+                        btnReportarSecreto.innerText = "🚩 Reportado";
+                    }
+                }
+            });
             return;
         }
     });

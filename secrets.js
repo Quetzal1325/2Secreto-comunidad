@@ -1,4 +1,4 @@
-// secrets.js - Manejo de la colección de secretos en Firestore
+// secrets.js - Manejo de la colección de secretos en Firestore con Moderación Automática
 import { 
     collection, 
     addDoc, 
@@ -17,12 +17,8 @@ import { pintarSecretos } from "./ui.js";
 
 let unsubscribeFeed = null;
 
-// 1. GUARDAR SECRETO
-// secrets.js - Busca y reemplaza la función guardarSecreto:
-
-// secrets.js - Busca e integra el campo 'tmpy_code' en guardarSecreto:
-
-export async function guardarSecreto(texto, esNsfw, tmpyCode) { // <-- Añadimos parámetro
+// 1. GUARDAR SECRETO (CON INICIALIZACIÓN DE REPORTES)
+export async function guardarSecreto(texto, esNsfw, tmpyCode) { 
     try {
         const user = auth.currentUser;
         if (!user) return alert("Debes estar logueado para publicar.");
@@ -38,16 +34,17 @@ export async function guardarSecreto(texto, esNsfw, tmpyCode) { // <-- Añadimos
             genero = userSnap.data().genero;
         }
 
-        // Estructura del documento actualizado
+        // Estructura del documento con el escudo de reportes en 0
         await addDoc(collection(db, "secrets"), {
             texto: texto,
             es_nsfw: esNsfw,
-            tmpy_code: tmpyCode ? tmpyCode.trim() : "", // <-- NUEVO: Guardamos el código limpio si existe
+            tmpy_code: tmpyCode ? tmpyCode.trim() : "", 
             autor_id: user.uid,
             autor_edad: edad,
             autor_genero: genero,
             fecha: new Date(),
-            reacciones: { feliz: 0, enojado: 0, triste: 0, asco: 0 }
+            reacciones: { feliz: 0, enojado: 0, triste: 0, asco: 0 },
+            reportes: 0 // <-- NUEVO: Todos los secretos nacen limpios
         });
 
         console.log("¡Secreto publicado con éxito! 🤫");
@@ -58,7 +55,7 @@ export async function guardarSecreto(texto, esNsfw, tmpyCode) { // <-- Añadimos
     }
 }
 
-// 2. ESCUCHAR FEED EN TIEMPO REAL (Filtro por tipo Normal/NSFW)
+// 2. ESCUCHAR FEED EN TIEMPO REAL (CON FILTRO DE REPORTES)
 export function cargarFeed(mostrarNsfw) {
     if (unsubscribeFeed) unsubscribeFeed();
 
@@ -71,7 +68,12 @@ export function cargarFeed(mostrarNsfw) {
     unsubscribeFeed = onSnapshot(q, (snapshot) => {
         const secretos = [];
         snapshot.forEach((doc) => {
-            secretos.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            
+            // 🛡️ FILTRO DE BANEO SUAVE: Si el secreto tiene 5 o más reportes, se ignora del feed
+            if (data.reportes >= 5) return;
+
+            secretos.push({ id: doc.id, ...data });
         });
         pintarSecretos(secretos);
     }, (error) => {
@@ -123,7 +125,7 @@ export async function darReaccion(secretoId, tipoReaccion) {
     }
 }
 
-// 4. CARGAR ÚNICAMENTE LOS SECRETOS DEL USUARIO LOGUEADO
+// 4. CARGAR ÚNICAMENTE LOS SECRETOS DEL USUARIO LOGUEADO (CON FILTRO DE REPORTES)
 export function cargarMisSecretos() {
     const user = auth.currentUser;
     if (!user) return;
@@ -139,10 +141,33 @@ export function cargarMisSecretos() {
     unsubscribeFeed = onSnapshot(q, (snapshot) => {
         const secretos = [];
         snapshot.forEach((doc) => {
-            secretos.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            
+            // También filtramos en tus secretos si ya fue tumbado por reportes
+            if (data.reportes >= 5) return;
+
+            secretos.push({ id: doc.id, ...data });
         });
         pintarSecretos(secretos);
     }, (error) => {
         console.error("Error al cargar tus secretos:", error);
     });
+}
+
+// 5. EJECUTAR DENUNCIA DE UN SECRETO COMPLETO
+export async function denunciarSecreto(secretoId) {
+    try {
+        const secretoRef = doc(db, "secrets", secretoId);
+        
+        // increment(1) sube el contador directo en el servidor de Firebase de forma segura
+        await updateDoc(secretoRef, {
+            reportes: increment(1)
+        });
+        
+        console.log(`Secreto ${secretoId} reportado con éxito.`);
+        return true;
+    } catch (error) {
+        console.error("Error al registrar denuncia del secreto:", error);
+        return false;
+    }
 }
